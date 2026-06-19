@@ -630,8 +630,11 @@ section { padding: 6rem 1rem; position: relative; z-index: 1; transition: backgr
   section { padding: 3.5rem 1rem; }
   .timeline-item:hover .timeline-card { transform: none; }
 
-  /* Header compact on mobile */
-  .site-header { padding: 0 0.6rem !important; }
+  /* Header compact on mobile — shrink buttons to avoid overflow */
+  .site-header { padding: 0 0.5rem !important; }
+  .site-header button { font-size: 0.72rem !important; padding: 0.35rem 0.55rem !important; gap: 3px !important; }
+  .site-header span[style*="width:13"] { width: 11px !important; height: 11px !important; }
+  .site-header span[style*="width:22"] { width: 18px !important; height: 18px !important; }
 
   /* Section title smaller on mobile */
   .section-title { font-size: clamp(1.5rem, 6vw, 2.2rem); }
@@ -664,6 +667,12 @@ section { padding: 6rem 1rem; position: relative; z-index: 1; transition: backgr
 
   /* Code viewer full screen on mobile */
   .code-viewer { max-height: 50vh !important; }
+
+  /* Member edit form grid → single column on mobile */
+  .member-form-grid { grid-template-columns: 1fr !important; }
+
+  /* About circle — visible and centered on mobile */
+  .about-img-wrapper { margin: 0 auto; width: fit-content; }
 }
 
 @media (max-width: 480px) {
@@ -675,15 +684,23 @@ section { padding: 6rem 1rem; position: relative; z-index: 1; transition: backgr
   .hero-stats .glass-card-orange { padding: 0.6rem 0.5rem !important; }
   .hero-stats .glass-card-orange > div:first-child { font-size: 1.4rem !important; }
 
-  /* About circle smaller */
-  .about-img-wrapper > div { width: 220px !important; height: 220px !important; }
+  /* About circle smaller on phones */
+  .about-img-wrapper > div { width: 200px !important; height: 200px !important; }
 
   /* Gallery grid: 1 column on very small */
   #gallery .gallery-grid { grid-template-columns: 1fr !important; }
 
   /* Section padding tighter */
   section { padding: 2.5rem 0.75rem; }
+
+  /* Header — hide "مركز الإداره" text on very small, show icon only */
+  .admin-center-label { display: none !important; }
 }
+
+/* ═══════════════════════════════════════════════
+   ADMIN CENTER BUTTON LABEL
+═══════════════════════════════════════════════ */
+.admin-center-label { display: inline; }
 
 /* ═══════════════════════════════════════════════
    SMOOTHNESS IMPROVEMENTS

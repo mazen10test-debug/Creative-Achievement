@@ -37,6 +37,8 @@ interface Member { id: number; name: string; role: string; bio: string; avatar: 
 interface Game { id: number; title: string; description: string; icon: string; color: string; players: string; duration: string; instructions: string; }
 interface GalleryItem { id: number; url: string; caption: string; category: string; }
 interface MemberOfMonth { name: string; achievement: string; imageUrl: string | null; }
+interface AdminUser { id: number; username: string; password: string; role: "superadmin"|"admin"; }
+interface FailedLogin { id: number; username: string; attemptedAt: string; location: string; }
 
 // ─────────────────────────────────────────────
 // INITIAL DATA
@@ -56,6 +58,10 @@ const INITIAL_GAMES: Game[] = [
   { id:4, title:"قصة بلا نهاية", icon:"📖", color:"from-orange-500 to-red-500",    description:"كل مشارك يضيف جملة لبناء قصة جماعية مشتركة",                      players:"٥–٢٠ مشاركاً", duration:"٢٠ دقيقة", instructions:"يبدأ المحكّم بجملة افتتاحية، ثم يُكمل كل لاعب القصة بجملة واحدة فقط. في النهاية تُقرأ القصة كاملةً للجميع!" },
   { id:5, title:"محاكاة القادة",  icon:"⚡", color:"from-amber-600 to-orange-700",  description:"تدريب على القيادة والقرارات الاستراتيجية الصعبة",                  players:"٦–١٨ مشاركاً", duration:"٩٠ دقيقة", instructions:"يتولى المشاركون أدواراً قيادية في سيناريوهات واقعية. يتخذون قرارات جماعية ثم يناقشون النتائج." },
   { id:6, title:"مبتكرون صغار",  icon:"💡", color:"from-yellow-400 to-amber-500",  description:"ابتكر حلولاً خلاقة لمشكلات من الحياة اليومية",                    players:"٣–٥ أشخاص",    duration:"٥٠ دقيقة", instructions:"يُعطى كل فريق مشكلة واقعية. المهمة ابتكار حل إبداعي وتقديمه في ٥ دقائق. الجائزة للحل الأكثر ابتكاراً." },
+];
+
+const INITIAL_ADMINS: AdminUser[] = [
+  { id: 1, username: "Admin", password: "Admin100", role: "superadmin" },
 ];
 
 const INITIAL_GALLERY: GalleryItem[] = [
@@ -90,6 +96,9 @@ const Ico = {
   Check:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={3} strokeLinecap="round"><polyline points="20 6 9 17 4 12"/></svg>,
   ChevL:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="15 18 9 12 15 6"/></svg>,
   ChevR:   () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="9 18 15 12 9 6"/></svg>,
+  Shield:  () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>,
+  Warning: () => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>,
+  UserPlus:() => <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><path d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>,
   Moon:    () => (
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round">
       <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" fill="currentColor" opacity="0.9"/>
@@ -131,9 +140,10 @@ function useScrollReveal(threshold=0.15) {
 // ─────────────────────────────────────────────
 // HEADER
 // ─────────────────────────────────────────────
-function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme }: {
+function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme, onAdminCenter, failedCount }: {
   isAdmin: boolean; isDark: boolean;
   onLoginClick:()=>void; onLogout:()=>void; onToggleTheme:()=>void;
+  onAdminCenter:()=>void; failedCount:number;
 }) {
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -162,7 +172,7 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme }: {
           </div>
 
           {/* Right: Theme toggle + Admin */}
-          <div style={{ display:"flex", alignItems:"center", gap:"0.5rem" }}>
+          <div style={{ display:"flex", alignItems:"center", gap:"0.45rem" }}>
             {/* 🌙 / ☀️ Toggle */}
             <button className="theme-toggle" onClick={onToggleTheme} title={isDark ? "الوضع الفاتح" : "الوضع الليلي"}>
               <span style={{ width:22, height:22, color: isDark ? "#ED9004" : "#461506", display:"block",
@@ -171,14 +181,25 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme }: {
               </span>
             </button>
 
-            {/* Admin button */}
+            {/* مركز الإداره — admins only */}
+            {isAdmin && (
+              <button onClick={onAdminCenter} style={{ position:"relative", fontSize:"0.78rem", padding:"0.4rem 0.7rem", display:"flex", alignItems:"center", gap:4, background:"linear-gradient(135deg,#dc2626,#b91c1c)", border:"none", borderRadius:10, cursor:"pointer", color:"white", fontFamily:"'Tajawal',sans-serif", fontWeight:700, whiteSpace:"nowrap" }}>
+                <span style={{ width:13, height:13, flexShrink:0 }}><Ico.Shield/></span>
+                <span className="admin-center-label">مركز الإداره</span>
+                {failedCount>0 && (
+                  <span style={{ position:"absolute", top:-6, left:-6, background:"#fbbf24", color:"#1a0000", borderRadius:"50%", width:18, height:18, fontSize:"0.65rem", fontWeight:900, display:"flex", alignItems:"center", justifyContent:"center", lineHeight:1 }}>{failedCount>9?"9+":failedCount}</span>
+                )}
+              </button>
+            )}
+
+            {/* Login / Logout button */}
             {isAdmin ? (
-              <button className="btn-primary" style={{ fontSize:"0.8rem", padding:"0.4rem 0.8rem", display:"flex", alignItems:"center", gap:4 }} onClick={onLogout}>
-                <span style={{ width:14, height:14 }}><Ico.Logout/></span>خروج
+              <button className="btn-primary" style={{ fontSize:"0.78rem", padding:"0.4rem 0.7rem", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap" }} onClick={onLogout}>
+                <span style={{ width:13, height:13, flexShrink:0 }}><Ico.Logout/></span>خروج
               </button>
             ) : (
-              <button className="btn-primary" style={{ fontSize:"0.8rem", padding:"0.4rem 0.8rem", display:"flex", alignItems:"center", gap:4 }} onClick={onLoginClick}>
-                <span style={{ width:14, height:14 }}><Ico.User/></span>تسجيل الدخول
+              <button className="btn-primary" style={{ fontSize:"0.78rem", padding:"0.4rem 0.7rem", display:"flex", alignItems:"center", gap:4, whiteSpace:"nowrap" }} onClick={onLoginClick}>
+                <span style={{ width:13, height:13, flexShrink:0 }}><Ico.User/></span>تسجيل الدخول
               </button>
             )}
           </div>
@@ -223,18 +244,35 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme }: {
 // ─────────────────────────────────────────────
 // AUTH MODAL
 // ─────────────────────────────────────────────
-function AuthModal({ onClose, onSuccess }: { onClose:()=>void; onSuccess:()=>void }) {
+function AuthModal({ onClose, onSuccess, admins, onFailedAttempt }: {
+  onClose:()=>void; onSuccess:(username:string)=>void;
+  admins: AdminUser[];
+  onFailedAttempt:(username:string, location:string)=>void;
+}) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [showPass, setShowPass] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
+  const fetchLocation = async (): Promise<string> => {
+    try {
+      const r = await fetch("https://ipapi.co/json/");
+      const d = await r.json();
+      return `${d.city||""}, ${d.country_name||""}`.replace(/^, |, $/, "") || "غير معروف";
+    } catch { return "غير معروف"; }
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault(); setError(""); setLoading(true);
-    setTimeout(()=>{
-      if(username==="Admin" && password==="Admin100") { onSuccess(); }
-      else { setError("بيانات الدخول غير صحيحة"); setLoading(false); }
+    setTimeout(async ()=>{
+      const match = admins.find(a => a.username === username && a.password === password);
+      if(match) { onSuccess(username); }
+      else {
+        setError("بيانات الدخول غير صحيحة"); setLoading(false);
+        const loc = await fetchLocation();
+        onFailedAttempt(username, loc);
+      }
     }, 800);
   };
 
@@ -268,6 +306,168 @@ function AuthModal({ onClose, onSuccess }: { onClose:()=>void; onSuccess:()=>voi
         <button onClick={onClose} style={{ position:"absolute", top:"1rem", left:"1rem", width:32, height:32, background:"rgba(0,0,0,0.08)", border:"none", borderRadius:8, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"var(--text-secondary)" }}>
           <span style={{ width:16, height:16 }}><Ico.X/></span>
         </button>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// ADMIN CENTER MODAL
+// ─────────────────────────────────────────────
+function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedLogins, currentUser }: {
+  onClose:()=>void;
+  admins: AdminUser[]; setAdmins:(v:AdminUser[]|((_:AdminUser[])=>AdminUser[]))=>void;
+  failedLogins: FailedLogin[]; setFailedLogins:(v:FailedLogin[]|((_:FailedLogin[])=>FailedLogin[]))=>void;
+  currentUser: string;
+}) {
+  const [tab, setTab] = useState<"attempts"|"admins">("attempts");
+  const [newUser, setNewUser] = useState({ username:"", password:"", role:"admin" as "superadmin"|"admin" });
+  const [showNewPass, setShowNewPass] = useState(false);
+  const [addErr, setAddErr] = useState("");
+  const currentAdmin = admins.find(a=>a.username===currentUser);
+  const isSuperAdmin = currentAdmin?.role==="superadmin";
+
+  const addAdmin = () => {
+    setAddErr("");
+    if(!newUser.username.trim()||!newUser.password.trim()) { setAddErr("أدخل الاسم وكلمة المرور"); return; }
+    if(admins.find(a=>a.username===newUser.username)) { setAddErr("اسم المستخدم موجود مسبقاً"); return; }
+    setAdmins(prev=>[...prev, { id:Date.now(), username:newUser.username, password:newUser.password, role:newUser.role }]);
+    setNewUser({ username:"", password:"", role:"admin" });
+  };
+
+  return (
+    <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
+      <div style={{ width:"min(680px,96vw)", animation:"modalContent 0.35s cubic-bezier(0.23,1,0.32,1)", position:"relative" }}>
+        <div className="glass-card" style={{ overflow:"hidden", border:"2px solid rgba(220,38,38,0.4)", boxShadow:"0 25px 80px rgba(0,0,0,0.6), 0 0 40px rgba(220,38,38,0.15)" }}>
+          {/* Header */}
+          <div style={{ background:"linear-gradient(135deg,#7f1d1d,#991b1b)", padding:"1.2rem 1.5rem", display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+            <div style={{ display:"flex", alignItems:"center", gap:"0.7rem" }}>
+              <span style={{ width:24, height:24, color:"#fca5a5" }}><Ico.Shield/></span>
+              <div>
+                <h2 style={{ color:"white", fontFamily:"'Amiri',serif", fontSize:"1.2rem", fontWeight:700, lineHeight:1 }}>مركز الإداره</h2>
+                <p style={{ color:"rgba(252,165,165,0.7)", fontSize:"0.72rem", marginTop:2 }}>للمدراء المعتمدين فقط</p>
+              </div>
+            </div>
+            <button onClick={onClose} style={{ background:"rgba(255,255,255,0.15)", border:"none", borderRadius:8, width:34, height:34, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"white" }}>
+              <span style={{ width:16, height:16 }}><Ico.X/></span>
+            </button>
+          </div>
+
+          {/* Tabs */}
+          <div style={{ display:"flex", borderBottom:"1px solid rgba(220,38,38,0.2)", background:"rgba(220,38,38,0.05)" }}>
+            {([["attempts","🚨 محاولات الدخول الفاشلة"],["admins","👥 إدارة الإداريين"]] as const).map(([key,label])=>(
+              <button key={key} onClick={()=>setTab(key)}
+                style={{ flex:1, padding:"0.8rem", background:"none", border:"none", cursor:"pointer", fontFamily:"'Tajawal',sans-serif", fontSize:"0.9rem", fontWeight:600, color: tab===key ? "#ef4444" : "var(--text-secondary)", borderBottom: tab===key ? "2px solid #ef4444" : "2px solid transparent", transition:"all 0.2s" }}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          {/* Content */}
+          <div style={{ padding:"1.2rem", maxHeight:"55vh", overflowY:"auto" }}>
+            {tab==="attempts" && (
+              <div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
+                  <p style={{ color:"var(--text-muted)", fontSize:"0.82rem" }}>{failedLogins.length} محاولة مسجّلة</p>
+                  {failedLogins.length>0 && (
+                    <button onClick={()=>setFailedLogins([])} style={{ background:"rgba(220,38,38,0.1)", border:"1px solid rgba(220,38,38,0.3)", borderRadius:8, padding:"0.3rem 0.7rem", cursor:"pointer", color:"#ef4444", fontSize:"0.78rem", fontFamily:"'Tajawal',sans-serif" }}>
+                      مسح الكل
+                    </button>
+                  )}
+                </div>
+                {failedLogins.length===0 ? (
+                  <div style={{ textAlign:"center", padding:"3rem 0", color:"var(--text-muted)" }}>
+                    <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>✅</div>
+                    <p>لا توجد محاولات دخول فاشلة</p>
+                  </div>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.6rem" }}>
+                    {[...failedLogins].reverse().map(fl=>(
+                      <div key={fl.id} style={{ display:"flex", alignItems:"flex-start", gap:"0.8rem", padding:"0.8rem 1rem", borderRadius:10, background:"rgba(220,38,38,0.06)", border:"1px solid rgba(220,38,38,0.15)" }}>
+                        <span style={{ fontSize:"1.3rem", marginTop:2 }}>⚠️</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:"0.3rem" }}>
+                            <span style={{ color:"#ef4444", fontWeight:700, fontSize:"0.9rem" }}>
+                              محاولة: <span style={{ fontFamily:"monospace" }}>{fl.username||"(بدون اسم)"}</span>
+                            </span>
+                            <span style={{ color:"var(--text-muted)", fontSize:"0.78rem" }}>{fl.attemptedAt}</span>
+                          </div>
+                          <div style={{ color:"var(--text-secondary)", fontSize:"0.82rem", marginTop:"0.2rem", display:"flex", alignItems:"center", gap:4 }}>
+                            📍 {fl.location}
+                          </div>
+                        </div>
+                        <button onClick={()=>setFailedLogins(prev=>prev.filter(x=>x.id!==fl.id))} style={{ background:"none", border:"none", cursor:"pointer", color:"#ef4444", opacity:0.6, width:24, height:24, flexShrink:0 }}>
+                          <Ico.X/>
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {tab==="admins" && (
+              <div>
+                {/* Current admins list */}
+                <div style={{ display:"flex", flexDirection:"column", gap:"0.6rem", marginBottom:"1.5rem" }}>
+                  {admins.map(a=>(
+                    <div key={a.id} style={{ display:"flex", alignItems:"center", gap:"0.8rem", padding:"0.7rem 1rem", borderRadius:10, background:"rgba(70,21,6,0.06)", border:"1px solid rgba(70,21,6,0.12)" }}>
+                      <span style={{ width:36, height:36, borderRadius:"50%", background: a.role==="superadmin" ? "linear-gradient(135deg,#7f1d1d,#b91c1c)" : "linear-gradient(135deg,var(--orange),var(--brown))", display:"flex", alignItems:"center", justifyContent:"center", flexShrink:0 }}>
+                        <span style={{ width:16, height:16, color:"white" }}><Ico.User/></span>
+                      </span>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontWeight:700, color:"var(--text-primary)", fontSize:"0.9rem" }}>{a.username}</div>
+                        <div style={{ fontSize:"0.75rem", color: a.role==="superadmin"?"#ef4444":"var(--orange-dark)", fontWeight:600 }}>
+                          {a.role==="superadmin" ? "⭐ مدير رئيسي" : "🔑 مدير"}
+                        </div>
+                      </div>
+                      {a.username!==currentUser && isSuperAdmin && (
+                        <button onClick={()=>setAdmins(prev=>prev.filter(x=>x.id!==a.id))} style={{ background:"rgba(220,38,38,0.1)", border:"1px solid rgba(220,38,38,0.2)", borderRadius:8, width:32, height:32, cursor:"pointer", display:"flex", alignItems:"center", justifyContent:"center", color:"#ef4444" }}>
+                          <span style={{ width:14, height:14 }}><Ico.Trash/></span>
+                        </button>
+                      )}
+                      {a.username===currentUser && (
+                        <span style={{ fontSize:"0.72rem", color:"var(--text-muted)", background:"rgba(237,144,4,0.1)", borderRadius:6, padding:"2px 8px" }}>أنت</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Add new admin form - superadmin only */}
+                {isSuperAdmin ? (
+                  <div style={{ borderTop:"1px solid rgba(70,21,6,0.15)", paddingTop:"1rem" }}>
+                    <h4 style={{ color:"var(--text-primary)", fontWeight:700, marginBottom:"0.8rem", display:"flex", alignItems:"center", gap:6 }}>
+                      <span style={{ width:16, height:16, color:"var(--orange)" }}><Ico.UserPlus/></span>
+                      إضافة مدير جديد
+                    </h4>
+                    <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.6rem" }}>
+                      <input className="form-input" placeholder="اسم المستخدم" value={newUser.username} onChange={e=>setNewUser(v=>({...v,username:e.target.value}))}/>
+                      <div style={{ position:"relative" }}>
+                        <input className="form-input" placeholder="كلمة المرور" type={showNewPass?"text":"password"} value={newUser.password} onChange={e=>setNewUser(v=>({...v,password:e.target.value}))} style={{ paddingLeft:"2.2rem" }}/>
+                        <button type="button" onClick={()=>setShowNewPass(v=>!v)} style={{ position:"absolute", left:"0.6rem", top:"50%", transform:"translateY(-50%)", background:"none", border:"none", cursor:"pointer", color:"#888", width:18, height:18 }}>
+                          {showNewPass?<Ico.EyeOff/>:<Ico.Eye/>}
+                        </button>
+                      </div>
+                    </div>
+                    <select className="form-input" value={newUser.role} onChange={e=>setNewUser(v=>({...v,role:e.target.value as "superadmin"|"admin"}))} style={{ marginTop:"0.6rem", width:"100%" }}>
+                      <option value="admin">مدير عادي</option>
+                      <option value="superadmin">مدير رئيسي</option>
+                    </select>
+                    {addErr && <p style={{ color:"#ef4444", fontSize:"0.82rem", marginTop:"0.4rem" }}>{addErr}</p>}
+                    <button className="btn-primary" onClick={addAdmin} style={{ marginTop:"0.8rem", display:"flex", alignItems:"center", gap:6, fontSize:"0.9rem", padding:"0.55rem 1.2rem", background:"linear-gradient(135deg,#dc2626,#b91c1c)" }}>
+                      <span style={{ width:16, height:16 }}><Ico.UserPlus/></span>
+                      إضافة مدير
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ textAlign:"center", padding:"1.5rem", background:"rgba(220,38,38,0.05)", borderRadius:12, border:"1px dashed rgba(220,38,38,0.2)" }}>
+                    <p style={{ color:"var(--text-muted)", fontSize:"0.85rem" }}>صلاحية إضافة المدراء متاحة للمدير الرئيسي فقط</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -993,10 +1193,14 @@ function FloatingCodeButton({ onClick, isDark }: { onClick:()=>void; isDark:bool
 // ─────────────────────────────────────────────
 export default function App() {
   const [isAdmin, setIsAdmin] = useState(false);
+  const [currentUser, setCurrentUser] = useState("");
   const [showAuth, setShowAuth] = useState(false);
   const [showCode, setShowCode] = useState(false);
+  const [showAdminCenter, setShowAdminCenter] = useState(false);
   const [isDark, setIsDark] = useState(false);
   const [toast, setToast] = useState<{msg:string; type:"success"|"error"|"info"}|null>(null);
+  const [admins, setAdmins] = useLocalStorage<AdminUser[]>("injaz-admins", INITIAL_ADMINS);
+  const [failedLogins, setFailedLogins] = useLocalStorage<FailedLogin[]>("injaz-failed-logins", []);
 
   /* persist theme */
   useEffect(()=>{ const saved=localStorage.getItem("injaz-theme"); if(saved==="dark") setIsDark(true); },[]);
@@ -1009,9 +1213,15 @@ export default function App() {
     setToast({msg,type}); setTimeout(()=>setToast(null),3000);
   },[]);
 
-  const handleLoginSuccess=()=>{ setIsAdmin(true); setShowAuth(false); showToast("مرحباً! تم تسجيل دخولك كمدير","success"); };
-  const handleLogout=()=>{ setIsAdmin(false); showToast("تم تسجيل خروجك بنجاح","info"); };
+  const handleLoginSuccess=(username:string)=>{ setIsAdmin(true); setCurrentUser(username); setShowAuth(false); showToast(`مرحباً ${username}! تم تسجيل دخولك كمدير`,"success"); };
+  const handleLogout=()=>{ setIsAdmin(false); setCurrentUser(""); showToast("تم تسجيل خروجك بنجاح","info"); };
   const toggleTheme=()=>setIsDark(v=>!v);
+  const handleFailedAttempt=(username:string, location:string)=>{
+    setFailedLogins(prev=>[...prev,{
+      id:Date.now(), username, location,
+      attemptedAt: new Date().toLocaleString("ar-SA",{dateStyle:"short",timeStyle:"medium"})
+    }]);
+  };
 
   return (
     <div data-theme={isDark?"dark":"light"} style={{ minHeight:"100vh", background:"var(--bg-base)", transition:"background 0.5s ease", position:"relative" }}>
@@ -1027,7 +1237,7 @@ export default function App() {
       )}
 
       {/* Header */}
-      <Header isAdmin={isAdmin} isDark={isDark} onLoginClick={()=>setShowAuth(true)} onLogout={handleLogout} onToggleTheme={toggleTheme}/>
+      <Header isAdmin={isAdmin} isDark={isDark} onLoginClick={()=>setShowAuth(true)} onLogout={handleLogout} onToggleTheme={toggleTheme} onAdminCenter={()=>setShowAdminCenter(true)} failedCount={failedLogins.length}/>
 
       {/* Sections */}
       <main style={{ position:"relative", zIndex:1 }}>
@@ -1043,8 +1253,16 @@ export default function App() {
       <FloatingCodeButton onClick={()=>setShowCode(true)} isDark={isDark}/>
 
       {/* Modals */}
-      {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onSuccess={handleLoginSuccess}/>}
+      {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onSuccess={handleLoginSuccess} admins={admins} onFailedAttempt={handleFailedAttempt}/>}
       {showCode && <CodeViewerModal onClose={()=>setShowCode(false)}/>}
+      {showAdminCenter && isAdmin && (
+        <AdminCenterModal
+          onClose={()=>setShowAdminCenter(false)}
+          admins={admins} setAdmins={setAdmins}
+          failedLogins={failedLogins} setFailedLogins={setFailedLogins}
+          currentUser={currentUser}
+        />
+      )}
 
       {/* Toast */}
       {toast && <Toast message={toast.msg} type={toast.type}/>}
