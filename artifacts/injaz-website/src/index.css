@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Amiri:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@300;400;500;700;800;900&family=Amiri:wght@400;700&family=Qomra&display=swap');
 
 @import "tailwindcss";
 
@@ -129,7 +129,7 @@
 html { scroll-behavior: smooth; }
 
 body {
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Qomra', 'Tajawal', sans-serif;
   background: var(--bg-base);
   color: var(--text-primary);
   direction: rtl;
@@ -238,7 +238,7 @@ body {
    SECTION HEADERS
 ═══════════════════════════════════════════════ */
 .section-title {
-  font-family: 'Amiri', serif;
+  font-family: 'Qomra', 'Amiri', serif;
   font-size: clamp(1.8rem, 4vw, 3rem);
   font-weight: 700;
   text-align: center;
@@ -258,7 +258,7 @@ body {
 .btn-primary {
   background: linear-gradient(135deg, var(--orange) 0%, var(--orange-dark) 100%);
   color: #fff;
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Qomra', 'Tajawal', sans-serif;
   font-weight: 700;
   border: none;
   border-radius: 12px;
@@ -275,7 +275,7 @@ body {
 .btn-dark {
   background: linear-gradient(135deg, var(--brown) 0%, var(--brown-light) 100%);
   color: var(--orange-light);
-  font-family: 'Tajawal', sans-serif;
+  font-family: 'Qomra', 'Tajawal', sans-serif;
   font-weight: 700;
   border: 1px solid rgba(237,144,4,0.3);
   border-radius: 12px;
@@ -604,9 +604,80 @@ body {
    SECTIONS
 ═══════════════════════════════════════════════ */
 section { padding: 6rem 1rem; position: relative; z-index: 1; transition: background 0.5s ease; }
+
+/* ═══════════════════════════════════════════════
+   HERO STATS — always 3 in one row
+═══════════════════════════════════════════════ */
+.hero-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin: 1rem auto 2rem;
+  max-width: 400px;
+  animation: fadeInUp 0.7s ease both;
+  animation-delay: 0.3s;
+}
+
+/* ═══════════════════════════════════════════════
+   MOBILE RESPONSIVENESS
+═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
-  section { padding: 4rem 1rem; }
+  section { padding: 3.5rem 1rem; }
   .timeline-item:hover .timeline-card { transform: none; }
+
+  /* Header compact on mobile */
+  .site-header { padding: 0 0.6rem !important; }
+
+  /* Section title smaller on mobile */
+  .section-title { font-size: clamp(1.5rem, 6vw, 2.2rem); }
+
+  /* About section grid stacks on mobile */
+  #about .about-grid { grid-template-columns: 1fr !important; }
+
+  /* Members grid: 1 column on small screens */
+  #members .members-grid { grid-template-columns: 1fr !important; }
+
+  /* Games grid: 1 column on small screens */
+  #games .games-grid { grid-template-columns: 1fr !important; }
+
+  /* Gallery grid: 2 columns on mobile */
+  #gallery .gallery-grid { grid-template-columns: repeat(2, 1fr) !important; }
+
+  /* Buttons: equal width on mobile */
+  .hero-btns { flex-direction: column; align-items: center; width: 100%; }
+  .hero-btns .btn-primary,
+  .hero-btns .btn-dark { width: min(280px, 100%); text-align: center; justify-content: center; }
+
+  /* Modal full width on mobile */
+  .modal-box { width: 96vw !important; padding: 1.5rem 1rem !important; }
+
+  /* Glass card padding */
+  .glass-card { padding: 1rem !important; }
+
+  /* Footer links wrap */
+  .footer-links { flex-wrap: wrap; gap: 0.5rem; }
+
+  /* Code viewer full screen on mobile */
+  .code-viewer { max-height: 50vh !important; }
+}
+
+@media (max-width: 480px) {
+  /* Hero title smaller */
+  #hero h1 { font-size: clamp(1.8rem, 8vw, 2.8rem) !important; }
+
+  /* Hero stats even smaller */
+  .hero-stats { max-width: 320px; gap: 0.5rem; }
+  .hero-stats .glass-card-orange { padding: 0.6rem 0.5rem !important; }
+  .hero-stats .glass-card-orange > div:first-child { font-size: 1.4rem !important; }
+
+  /* About circle smaller */
+  .about-img-wrapper > div { width: 220px !important; height: 220px !important; }
+
+  /* Gallery grid: 1 column on very small */
+  #gallery .gallery-grid { grid-template-columns: 1fr !important; }
+
+  /* Section padding tighter */
+  section { padding: 2.5rem 0.75rem; }
 }
 
 /* ═══════════════════════════════════════════════

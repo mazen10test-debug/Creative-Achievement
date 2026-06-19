@@ -59,14 +59,14 @@ const INITIAL_GAMES: Game[] = [
 ];
 
 const INITIAL_GALLERY: GalleryItem[] = [
-  { id:1, url:"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80", caption:"لقاء تأسيسي",  category:"فعاليات"  },
-  { id:2, url:"https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80", caption:"ورشة إبداعية", category:"تدريب"    },
-  { id:3, url:"https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&q=80", caption:"جلسة تخطيط",  category:"تدريب"    },
-  { id:4, url:"https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80", caption:"فريق العمل",  category:"فعاليات"  },
-  { id:5, url:"https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&q=80", caption:"حفل تكريم",   category:"احتفالات" },
-  { id:6, url:"https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&q=80", caption:"رحلة ثقافية", category:"رحلات"    },
-  { id:7, url:"https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=600&q=80", caption:"مسابقة إبداعية", category:"فعاليات"},
-  { id:8, url:"https://images.unsplash.com/photo-1551818255-e6e10975bc17?w=600&q=80", caption:"مجلس شهري",   category:"اجتماعات" },
+  { id:1, url:"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80", caption:"لقاء تأسيسي",     category:"صور" },
+  { id:2, url:"https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=600&q=80", caption:"ورشة إبداعية",    category:"صور" },
+  { id:3, url:"https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=600&q=80", caption:"جلسة تخطيط",      category:"صور" },
+  { id:4, url:"https://images.unsplash.com/photo-1522071820081-009f0129c71c?w=600&q=80", caption:"فريق العمل",      category:"صور" },
+  { id:5, url:"https://images.unsplash.com/photo-1543269865-cbf427effbad?w=600&q=80", caption:"حفل تكريم",        category:"صور" },
+  { id:6, url:"https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=600&q=80", caption:"رحلة ثقافية",    category:"صور" },
+  { id:7, url:"https://images.unsplash.com/photo-1582213782179-e0d53f98f2ca?w=600&q=80", caption:"مسابقة إبداعية", category:"مقاطع" },
+  { id:8, url:"https://images.unsplash.com/photo-1551818255-e6e10975bc17?w=600&q=80", caption:"مجلس شهري",        category:"مقاطع" },
 ];
 
 // ─────────────────────────────────────────────
@@ -140,7 +140,7 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme }: {
   const navLinks = [
     { label:"الرئيسية", href:"#hero" }, { label:"من نحن", href:"#about" },
     { label:"الأعضاء", href:"#members" }, { label:"ألعابنا", href:"#games" },
-    { label:"معرض الصور", href:"#gallery" }, { label:"عضو الشهر", href:"#mom" },
+    { label:"المعرض", href:"#gallery" }, { label:"عضو الشهر", href:"#mom" },
   ];
   const scrollTo = (href:string) => { document.querySelector(href)?.scrollIntoView({behavior:"smooth"}); setMenuOpen(false); };
 
@@ -316,11 +316,11 @@ function HeroSection({ onScrollDown, isDark }: { onScrollDown:()=>void; isDark:b
           نبني الإبداع · نصنع الإنجاز · نحقق الأثر
         </p>
 
-        <div className="animate-fadeInUp delay-300" style={{ display:"flex", justifyContent:"center", gap:"2rem", margin:"1rem 0 2rem", flexWrap:"wrap" }}>
+        <div className="animate-fadeInUp delay-300 hero-stats">
           {[["٥+","أعضاء"],["٦","ألعاب"],["٨+","فعاليات"]].map(([n,l])=>(
-            <div key={l} className="glass-card-orange" style={{ padding:"0.8rem 1.5rem", textAlign:"center" }}>
-              <div style={{ fontSize:"1.8rem", fontWeight:900, color:"var(--stat-val-color)" }}>{n}</div>
-              <div style={{ fontSize:"0.85rem", color:"var(--orange-dark)", fontWeight:600 }}>{l}</div>
+            <div key={l} className="glass-card-orange" style={{ padding:"0.8rem 1.2rem", textAlign:"center", minWidth:90 }}>
+              <div style={{ fontSize:"1.8rem", fontWeight:900, color:"var(--stat-val-color)", fontFamily:"'Qomra','Tajawal',sans-serif" }}>{n}</div>
+              <div style={{ fontSize:"0.85rem", color:"var(--orange-dark)", fontWeight:700, fontFamily:"'Qomra','Tajawal',sans-serif" }}>{l}</div>
             </div>
           ))}
         </div>
@@ -372,17 +372,24 @@ function AboutSection({ isDark }: { isDark:boolean }) {
 
           <div className={visible?"animate-fadeInLeft":"opacity-0"} style={{ display:"flex", justifyContent:"center" }}>
             <div className="about-img-wrapper">
-              <div style={{ width:300, height:300, borderRadius:28,
+              <div style={{ width:280, height:280, borderRadius:"50%",
                 background: isDark
-                  ? "linear-gradient(135deg,#461506 0%,#000 100%)"
-                  : "linear-gradient(135deg,#ED9004 0%,#c97800 50%,#461506 100%)",
+                  ? "radial-gradient(circle at 40% 40%, #461506, #0a0200)"
+                  : "radial-gradient(circle at 40% 40%, #fff6e8, #fde8bb)",
                 display:"flex", alignItems:"center", justifyContent:"center",
-                boxShadow: isDark ? "0 20px 60px rgba(70,21,6,0.8)" : "0 20px 60px rgba(237,144,4,0.35)",
-                position:"relative", overflow:"hidden", transition:"background 0.4s ease" }}>
-                <img src={banner} alt="بانر الإنجاز الإبداعي" style={{ width:"90%", objectFit:"contain",
-                  filter: isDark ? "brightness(0.8) sepia(0.3)" : "brightness(1.1)" }}/>
-                <div style={{ position:"absolute", top:-20, right:-20, width:100, height:100, borderRadius:"50%", background:"rgba(255,255,255,0.06)" }}/>
-                <div style={{ position:"absolute", bottom:-30, left:-30, width:150, height:150, borderRadius:"50%", background:"rgba(255,255,255,0.04)" }}/>
+                boxShadow: isDark
+                  ? "0 20px 60px rgba(70,21,6,0.9), 0 0 100px rgba(70,21,6,0.4)"
+                  : "0 20px 60px rgba(237,144,4,0.35), 0 0 80px rgba(237,144,4,0.12)",
+                position:"relative", overflow:"hidden", transition:"all 0.4s ease",
+                border: isDark ? "2px solid rgba(70,21,6,0.5)" : "2px solid rgba(237,144,4,0.3)" }}>
+                <img src={logoNoBg} alt="شعار الإنجاز الإبداعي"
+                  style={{ width:"75%", height:"75%", objectFit:"contain",
+                    filter: isDark
+                      ? "drop-shadow(0 4px 24px rgba(70,21,6,1)) drop-shadow(0 0 40px rgba(70,21,6,0.8))"
+                      : "drop-shadow(0 4px 20px rgba(237,144,4,0.5))",
+                    transition:"filter 0.4s ease" }}/>
+                <div style={{ position:"absolute", top:-20, right:-20, width:100, height:100, borderRadius:"50%", background:"rgba(237,144,4,0.08)" }}/>
+                <div style={{ position:"absolute", bottom:-30, left:-30, width:150, height:150, borderRadius:"50%", background:"rgba(70,21,6,0.08)" }}/>
               </div>
             </div>
           </div>
@@ -654,7 +661,7 @@ function GamesSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) 
 // ─────────────────────────────────────────────
 function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
-  const [gallery, setGallery] = useLocalStorage<GalleryItem[]>("injaz-gallery", INITIAL_GALLERY);
+  const [gallery, setGallery] = useLocalStorage<GalleryItem[]>("injaz-gallery-v2", INITIAL_GALLERY);
   const [lightbox, setLightbox] = useState<GalleryItem|null>(null);
   const [lbIdx, setLbIdx] = useState(0);
   const [filter, setFilter] = useState("الكل");
@@ -663,8 +670,8 @@ function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
   const [newCaption, setNewCaption] = useState("");
   const [newCategory, setNewCategory] = useState("");
 
-  const cats=["الكل",...Array.from(new Set(gallery.map(g=>g.category)))];
-  const filtered=filter==="الكل"?gallery:gallery.filter(g=>g.category===filter);
+  const TABS = ["الكل", "صور", "مقاطع"] as const;
+  const filtered = filter==="الكل" ? gallery : gallery.filter(g=>g.category===filter);
 
   const openLightbox=(item:GalleryItem)=>{ const i=filtered.findIndex(g=>g.id===item.id); setLbIdx(i); setLightbox(item); };
   const prev=()=>{ const i=(lbIdx-1+filtered.length)%filtered.length; setLbIdx(i); setLightbox(filtered[i]); };
@@ -678,16 +685,17 @@ function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
   return (
     <section id="gallery" style={{ background: isDark ? "rgba(5,1,0,0.80)" : "linear-gradient(180deg,#fffaf5 0%,#fff8f0 100%)" }}>
       <div ref={ref} style={{ maxWidth:1100, margin:"0 auto", padding:"0 1rem" }}>
-        <h2 className={`section-title gradient-text ${visible?"animate-fadeInUp":"opacity-0"}`}>معرض الصور</h2>
+        <h2 className={`section-title gradient-text ${visible?"animate-fadeInUp":"opacity-0"}`}>المعرض</h2>
         <div className={`section-divider ${visible?"animate-fadeInUp delay-100":"opacity-0"}`}/>
 
-        <div className={`${visible?"animate-fadeInUp delay-200":"opacity-0"}`} style={{ display:"flex", gap:"0.5rem", justifyContent:"center", flexWrap:"wrap", marginBottom:"2rem" }}>
-          {cats.map(c=>(
+        <div className={`${visible?"animate-fadeInUp delay-200":"opacity-0"}`} style={{ display:"flex", gap:"0.6rem", justifyContent:"center", flexWrap:"wrap", marginBottom:"2rem" }}>
+          {TABS.map(c=>(
             <button key={c} onClick={()=>setFilter(c)}
-              style={{ padding:"0.4rem 1rem", borderRadius:999, border:"1.5px solid", cursor:"pointer", transition:"all 0.3s ease", fontFamily:"'Tajawal',sans-serif", fontWeight:600, fontSize:"0.9rem",
+              style={{ padding:"0.5rem 1.4rem", borderRadius:999, border:"2px solid", cursor:"pointer", transition:"all 0.3s ease", fontFamily:"'Qomra','Tajawal',sans-serif", fontWeight:700, fontSize:"1rem",
                 borderColor: filter===c ? "var(--orange)" : isDark?"rgba(70,21,6,0.4)":"rgba(70,21,6,0.2)",
                 background: filter===c ? "linear-gradient(135deg,var(--orange),var(--orange-dark))" : isDark?"rgba(70,21,6,0.2)":"rgba(255,255,255,0.7)",
-                color: filter===c ? "white" : "var(--text-primary)" }}>
+                color: filter===c ? "white" : "var(--text-primary)",
+                boxShadow: filter===c ? "0 4px 16px rgba(237,144,4,0.35)" : "none" }}>
               {c}
             </button>
           ))}
