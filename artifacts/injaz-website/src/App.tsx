@@ -6,6 +6,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import logoNoBg from "/logo-nobg.png";
 import banner from "/banner.png";
+import appRaw from "./App.tsx?raw";
+import cssRaw from "./index.css?raw";
 
 // ─────────────────────────────────────────────
 // PERSISTENT STORAGE HOOK
@@ -827,47 +829,7 @@ function CodeViewerModal({ onClose }: { onClose:()=>void }) {
   const [copied, setCopied] = useState(false);
   const [activeFile, setActiveFile] = useState<"app"|"css">("app");
 
-  const content = {
-    app:`/**
- * الإنجاز الإبداعي — App.tsx (ملف واحد شامل)
- *
- * المكونات: Header · AuthModal · HeroSection
- *           AboutSection · MembersSection · GamesSection
- *           GallerySection · MemberOfMonthSection · CodeViewerModal · Footer
- *
- * الميزات:
- *  ✓ وضع ليلي 🌙 + فاتح ☀️ مع حفظ التفضيل
- *  ✓ خلفية الزخرفة الإسلامية الكاملة
- *  ✓ في الوضع الداكن: خلفية سوداء + إضاءة #461506
- *  ✓ زخرفة الوضع الداكن بلون #461506
- *  ✓ تسجيل دخول المدير: Admin / Admin100
- *  ✓ سحب وإفلات لترتيب الأعضاء
- *  ✓ lightbox للصور + تنقل بلوحة المفاتيح
- *  ✓ تأثير ميلان ثلاثي الأبعاد على بطاقات الألعاب
- *  ✓ عضو الشهر مع رفع صورة خلفية
- *
- * الألوان: #ED9004 (برتقالي) | #461506 (بني/ليلي)
- * الخطوط: Tajawal + Amiri (Google Fonts)
- * التقنية: React 18 + TypeScript + Tailwind CSS
- * الاتجاه: RTL عربي بالكامل
- */
-
-// الملف الكامل: artifacts/injaz-website/src/App.tsx`,
-    css:`/* الملف الكامل: artifacts/injaz-website/src/index.css
- *
- * يحتوي على:
- *  • متغيرات Light Mode  (:root)
- *  • متغيرات Dark Mode   ([data-theme="dark"])
- *  • --bg-base: #000          (خلفية سوداء داكنة)
- *  • --pattern-color: #461506 (زخرفة بالبني الداكن)
- *  • جميع @keyframes: float · shimmer · moonGlow · sunGlow ...
- *  • .glass-card (يتكيف مع الوضع الليلي)
- *  • .site-bg.light / .site-bg.dark (طبقة البانر)
- *  • .theme-toggle (زر القمر/الشمس)
- *  • أنماط السحب والإفلات
- *  • أنماط Lightbox مع إضاءة #461506 ليلاً
- */`
-  };
+  const content = { app: appRaw, css: cssRaw };
 
   return (
     <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&onClose()}>
