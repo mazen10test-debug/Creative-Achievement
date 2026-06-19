@@ -8,6 +8,27 @@ import logoNoBg from "/logo-nobg.png";
 import banner from "/banner.png";
 
 // ─────────────────────────────────────────────
+// PERSISTENT STORAGE HOOK
+// يحفظ أي بيانات في localStorage تلقائياً
+// ─────────────────────────────────────────────
+function useLocalStorage<T>(key: string, initial: T): [T, (v: T | ((prev: T) => T)) => void] {
+  const [state, setState] = useState<T>(() => {
+    try {
+      const stored = localStorage.getItem(key);
+      return stored ? JSON.parse(stored) : initial;
+    } catch { return initial; }
+  });
+  const set = useCallback((v: T | ((prev: T) => T)) => {
+    setState(prev => {
+      const next = typeof v === "function" ? (v as (p: T) => T)(prev) : v;
+      try { localStorage.setItem(key, JSON.stringify(next)); } catch {}
+      return next;
+    });
+  }, [key]);
+  return [state, set];
+}
+
+// ─────────────────────────────────────────────
 // TYPES
 // ─────────────────────────────────────────────
 interface Member { id: number; name: string; role: string; bio: string; avatar: string; }
@@ -130,9 +151,12 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme }: {
             <span className="hamburger-line"/><span className="hamburger-line"/><span className="hamburger-line"/>
           </button>
 
-          {/* Center: Banner */}
-          <div style={{ flex:1, display:"flex", justifyContent:"center" }}>
-            <img src={banner} alt="الإنجاز الإبداعي" style={{ height:50, objectFit:"contain", borderRadius:8 }}/>
+          {/* Center: Logo + Name */}
+          <div style={{ flex:1, display:"flex", justifyContent:"center", alignItems:"center", gap:"0.6rem" }}>
+            <img src={logoNoBg} alt="شعار" style={{ height:42, objectFit:"contain", filter:"drop-shadow(0 2px 8px rgba(237,144,4,0.5))" }}/>
+            <span style={{ fontFamily:"'Amiri',serif", fontSize:"1.15rem", fontWeight:700, color:"rgba(237,144,4,0.95)", letterSpacing:"0.02em", whiteSpace:"nowrap" }}>
+              الإنجاز الإبداعي
+            </span>
           </div>
 
           {/* Right: Theme toggle + Admin */}
@@ -219,7 +243,7 @@ function AuthModal({ onClose, onSuccess }: { onClose:()=>void; onSuccess:()=>voi
           <div style={{ width:60, height:60, borderRadius:"50%", background:"linear-gradient(135deg,#ED9004,#461506)", display:"flex", alignItems:"center", justifyContent:"center", margin:"0 auto 1rem", boxShadow:"0 4px 20px rgba(237,144,4,0.4)" }}>
             <span style={{ width:28, height:28, color:"white" }}><Ico.Lock/></span>
           </div>
-          <h2 style={{ fontFamily:"'Amiri',serif", fontSize:"1.6rem", color:"var(--text-primary)", marginBottom:"0.3rem" }}>لوحة المدير</h2>
+          <h2 style={{ fontFamily:"'Amiri',serif", fontSize:"1.6rem", color:"var(--text-primary)", marginBottom:"0.3rem" }}>لوحة الإدارة</h2>
           <p style={{ color:"var(--text-muted)", fontSize:"0.9rem" }}>أدخل بيانات الدخول للمتابعة</p>
         </div>
         <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
@@ -381,7 +405,7 @@ function AboutSection({ isDark }: { isDark:boolean }) {
 // ─────────────────────────────────────────────
 function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
-  const [members, setMembers] = useState<Member[]>(INITIAL_MEMBERS);
+  const [members, setMembers] = useLocalStorage<Member[]>("injaz-members", INITIAL_MEMBERS);
   const [dragIdx, setDragIdx] = useState<number|null>(null);
   const [overIdx, setOverIdx] = useState<number|null>(null);
   const [editingMember, setEditingMember] = useState<Member|null>(null);
@@ -500,7 +524,7 @@ function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
 // ─────────────────────────────────────────────
 function GamesSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
-  const [games, setGames] = useState<Game[]>(INITIAL_GAMES);
+  const [games, setGames] = useLocalStorage<Game[]>("injaz-games", INITIAL_GAMES);
   const [activeGame, setActiveGame] = useState<Game|null>(null);
   const [editingGame, setEditingGame] = useState<Game|null>(null);
   const [showAdd, setShowAdd] = useState(false);
@@ -628,7 +652,7 @@ function GamesSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) 
 // ─────────────────────────────────────────────
 function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
-  const [gallery, setGallery] = useState<GalleryItem[]>(INITIAL_GALLERY);
+  const [gallery, setGallery] = useLocalStorage<GalleryItem[]>("injaz-gallery", INITIAL_GALLERY);
   const [lightbox, setLightbox] = useState<GalleryItem|null>(null);
   const [lbIdx, setLbIdx] = useState(0);
   const [filter, setFilter] = useState("الكل");
@@ -742,7 +766,7 @@ function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
 // ─────────────────────────────────────────────
 function MemberOfMonthSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
-  const [mom, setMom] = useState<MemberOfMonth>({ name:"أحمد محمد الزهراني", achievement:"قاد فريقه بنجاح نحو إطلاق أول مشروع رقمي للمجموعة، وحقق نتائج استثنائية تجاوزت جميع التوقعات المحددة.", imageUrl:null });
+  const [mom, setMom] = useLocalStorage<MemberOfMonth>("injaz-mom", { name:"أحمد محمد الزهراني", achievement:"قاد فريقه بنجاح نحو إطلاق أول مشروع رقمي للمجموعة، وحقق نتائج استثنائية تجاوزت جميع التوقعات المحددة.", imageUrl:null });
   const fileRef = useRef<HTMLInputElement>(null);
 
   return (

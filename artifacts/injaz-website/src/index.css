@@ -603,10 +603,106 @@ body {
 /* ═══════════════════════════════════════════════
    SECTIONS
 ═══════════════════════════════════════════════ */
-section { padding: 6rem 1rem; position: relative; z-index: 1; transition: background 0.4s ease; }
+section { padding: 6rem 1rem; position: relative; z-index: 1; transition: background 0.5s ease; }
 @media (max-width: 768px) {
   section { padding: 4rem 1rem; }
   .timeline-item:hover .timeline-card { transform: none; }
+}
+
+/* ═══════════════════════════════════════════════
+   SMOOTHNESS IMPROVEMENTS
+═══════════════════════════════════════════════ */
+
+/* All interactive elements transition smoothly */
+button, a, input, textarea, select {
+  transition: background 0.25s ease, color 0.25s ease,
+              border-color 0.25s ease, box-shadow 0.25s ease,
+              transform 0.2s ease, opacity 0.2s ease;
+}
+
+/* Opacity helper (used in JS className toggling) */
+.opacity-0 { opacity: 0; }
+
+/* Smooth section reveal — elements fade+rise as they enter viewport */
+[class*="animate-fadeIn"],
+[class*="animate-scale"] {
+  will-change: transform, opacity;
+}
+
+/* Smooth scrollbar */
+html { scroll-behavior: smooth; }
+
+/* Game card tilt — GPU accelerated */
+.game-card {
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+/* Lightbox image transition */
+.lightbox img {
+  transition: opacity 0.25s ease;
+}
+
+/* Gallery hover overlay — smoother */
+.gallery-item > div {
+  transition: opacity 0.35s ease !important;
+}
+
+/* Timeline card hover */
+.timeline-card {
+  transition: transform 0.35s cubic-bezier(0.23, 1, 0.32, 1) !important;
+}
+
+/* Glass card hover lift */
+.glass-card {
+  transition: background 0.4s ease, border-color 0.4s ease,
+              box-shadow 0.4s ease, transform 0.3s ease !important;
+}
+.glass-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(70,21,6,0.14), 0 2px 10px rgba(237,144,4,0.10) !important;
+}
+[data-theme="dark"] .glass-card:hover {
+  box-shadow: 0 12px 40px rgba(0,0,0,0.5), 0 2px 10px rgba(70,21,6,0.3) !important;
+}
+
+/* Modal appears with smooth spring */
+.modal-backdrop { animation: modalBackdrop 0.28s ease; }
+.modal-box, [style*="modalContent"] { animation: modalContent 0.32s cubic-bezier(0.23, 1, 0.32, 1); }
+
+/* Nav drawer link hover — instant highlight, smooth bg */
+.nav-menu button {
+  transition: background 0.2s ease, color 0.2s ease !important;
+}
+
+/* Header logo text */
+.site-header span[style] {
+  transition: color 0.3s ease;
+}
+
+/* Stat cards */
+.glass-card-orange {
+  transition: background 0.4s ease, transform 0.3s ease, box-shadow 0.3s ease;
+}
+.glass-card-orange:hover {
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 10px 30px rgba(237,144,4,0.18);
+}
+
+/* Section title divider smooth draw */
+.section-divider {
+  transition: background 0.4s ease;
+}
+
+/* Input focus ring smooth */
+.form-input {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease,
+              background 0.25s ease, color 0.25s ease !important;
+}
+
+/* Background pattern smooth theme switch */
+.site-bg {
+  transition: opacity 0.5s ease, filter 0.5s ease !important;
 }
 
 /* ═══════════════════════════════════════════════
