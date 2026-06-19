@@ -42,11 +42,11 @@ interface MemberOfMonth { name: string; achievement: string; imageUrl: string | 
 // INITIAL DATA
 // ─────────────────────────────────────────────
 const INITIAL_MEMBERS: Member[] = [
-  { id: 1, name: "أحمد محمد الزهراني",  role: "رئيس المجموعة",   bio: "قائد ملهم بخبرة واسعة في إدارة المشاريع الإبداعية وتطوير المواهب الشابة",                   avatar: "أ" },
-  { id: 2, name: "سارة عبدالله العمري",  role: "نائبة الرئيس",    bio: "متخصصة في التصميم الإبداعي وتطوير الهوية البصرية والتواصل المؤسسي",                        avatar: "س" },
-  { id: 3, name: "محمد خالد الغامدي",   role: "مسؤول التقنية",   bio: "مطور برمجيات شغوف بالابتكار التقني ودمج التكنولوجيا مع الإبداع",                            avatar: "م" },
-  { id: 4, name: "فاطمة علي الشهري",    role: "مسؤولة الفعاليات", bio: "منظمة فعاليات محترفة تمتلك قدرة فائقة على خلق تجارب لا تُنسى",                             avatar: "ف" },
-  { id: 5, name: "عمر يوسف القحطاني",   role: "مسؤول التوثيق",   bio: "مصور ومحتوى إبداعي يوثق رحلة المجموعة بعين فنية وأسلوب احترافي",                            avatar: "ع" },
+  { id: 1, name: "أحمد محمد الزهراني",  role: "رئيس المجموعة",    bio: "قائد ملهم بخبرة واسعة في إدارة المشاريع الإبداعية وتطوير المواهب الشابة",    avatar: "" },
+  { id: 2, name: "سارة عبدالله العمري",  role: "نائبة الرئيس",     bio: "متخصصة في التصميم الإبداعي وتطوير الهوية البصرية والتواصل المؤسسي",         avatar: "" },
+  { id: 3, name: "محمد خالد الغامدي",   role: "مسؤول التقنية",    bio: "مطور برمجيات شغوف بالابتكار التقني ودمج التكنولوجيا مع الإبداع",             avatar: "" },
+  { id: 4, name: "فاطمة علي الشهري",    role: "مسؤولة الفعاليات", bio: "منظمة فعاليات محترفة تمتلك قدرة فائقة على خلق تجارب لا تُنسى",              avatar: "" },
+  { id: 5, name: "عمر يوسف القحطاني",   role: "مسؤول التوثيق",    bio: "مصور ومحتوى إبداعي يوثق رحلة المجموعة بعين فنية وأسلوب احترافي",             avatar: "" },
 ];
 
 const INITIAL_GAMES: Game[] = [
@@ -414,7 +414,7 @@ function AboutSection({ isDark }: { isDark:boolean }) {
 // ─────────────────────────────────────────────
 function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
-  const [members, setMembers] = useLocalStorage<Member[]>("injaz-members", INITIAL_MEMBERS);
+  const [members, setMembers] = useLocalStorage<Member[]>("injaz-members-v2", INITIAL_MEMBERS);
   const [dragIdx, setDragIdx] = useState<number|null>(null);
   const [overIdx, setOverIdx] = useState<number|null>(null);
   const [editingMember, setEditingMember] = useState<Member|null>(null);
@@ -428,8 +428,17 @@ function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
   };
   const addMember=()=>{
     if(!newMember.name.trim()) return;
-    setMembers(m=>[...m,{...newMember,id:Date.now(),avatar:newMember.avatar||newMember.name[0]}]);
+    setMembers(m=>[...m,{...newMember,id:Date.now()}]);
     setNewMember({name:"",role:"",bio:"",avatar:""}); setShowAdd(false);
+  };
+  const pickFile=(onDone:(url:string)=>void)=>{
+    const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
+    inp.onchange=()=>{
+      const file=inp.files?.[0]; if(!file) return;
+      const reader=new FileReader();
+      reader.onload=e=>onDone(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }; inp.click();
   };
   const saveEdit=()=>{ if(!editingMember) return; setMembers(m=>m.map(x=>x.id===editingMember.id?editingMember:x)); setEditingMember(null); };
 
@@ -451,11 +460,23 @@ function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
         {isAdmin && showAdd && (
           <div className="glass-card animate-fadeInUp" style={{ padding:"1.5rem", marginBottom:"2rem" }}>
             <h3 style={{ marginBottom:"1rem", color:"var(--text-primary)", fontWeight:700 }}>عضو جديد</h3>
+            {/* صورة العضو */}
+            <div style={{ display:"flex", alignItems:"center", gap:"1rem", marginBottom:"1rem" }}>
+              <div style={{ width:64, height:64, borderRadius:14, overflow:"hidden", flexShrink:0, background:"linear-gradient(135deg,var(--orange),var(--brown))", border:"2px solid rgba(237,144,4,0.35)" }}>
+                <img src={newMember.avatar||logoNoBg} alt="معاينة" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>{(e.target as HTMLImageElement).src=logoNoBg;}}/>
+              </div>
+              <div style={{ flex:1, display:"flex", flexDirection:"column", gap:"0.4rem" }}>
+                <input className="form-input" placeholder="رابط الصورة (URL)" value={newMember.avatar} onChange={e=>setNewMember(v=>({...v,avatar:e.target.value}))} style={{ fontSize:"0.85rem" }}/>
+                <button type="button" className="btn-dark" style={{ fontSize:"0.8rem", padding:"0.4rem 0.8rem", display:"inline-flex", alignItems:"center", gap:4, width:"fit-content" }}
+                  onClick={()=>pickFile(url=>setNewMember(v=>({...v,avatar:url})))}>
+                  📁 رفع صورة
+                </button>
+              </div>
+            </div>
             <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.8rem" }}>
               <input className="form-input" placeholder="الاسم *" value={newMember.name} onChange={e=>setNewMember(v=>({...v,name:e.target.value}))}/>
               <input className="form-input" placeholder="الدور" value={newMember.role} onChange={e=>setNewMember(v=>({...v,role:e.target.value}))}/>
-              <input className="form-input" placeholder="الرمز (حرف)" value={newMember.avatar} onChange={e=>setNewMember(v=>({...v,avatar:e.target.value}))} maxLength={2}/>
-              <input className="form-input" placeholder="نبذة مختصرة" value={newMember.bio} onChange={e=>setNewMember(v=>({...v,bio:e.target.value}))}/>
+              <input className="form-input" placeholder="نبذة مختصرة" value={newMember.bio} onChange={e=>setNewMember(v=>({...v,bio:e.target.value}))} style={{ gridColumn:"1/-1" }}/>
             </div>
             <div style={{ display:"flex", gap:"0.5rem", marginTop:"1rem" }}>
               <button className="btn-primary" onClick={addMember}>إضافة</button>
@@ -475,7 +496,13 @@ function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
               onDrop={()=>handleDrop(i)}
               onDragEnd={()=>{ setDragIdx(null); setOverIdx(null); }}>
               {i<members.length-1 && <div className="timeline-line"/>}
-              <div className="timeline-dot">{m.avatar||m.name[0]}</div>
+              <div className="timeline-dot">
+                <img
+                  src={m.avatar || logoNoBg}
+                  alt={m.name}
+                  onError={e=>{ (e.target as HTMLImageElement).src=logoNoBg; }}
+                />
+              </div>
               <div className="timeline-card glass-card" style={{ padding:"1.2rem 1.5rem", flex:1 }}>
                 <div style={{ display:"flex", justifyContent:"space-between", alignItems:"flex-start", gap:"0.5rem", flexWrap:"wrap" }}>
                   <div>
@@ -511,8 +538,22 @@ function MembersSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
       {editingMember && (
         <div className="modal-backdrop" onClick={e=>e.target===e.currentTarget&&setEditingMember(null)}>
           <div className="modal-box glass-card" style={{ padding:"2rem" }}>
-            <h3 style={{ marginBottom:"1.5rem", color:"var(--text-primary)", fontWeight:700, fontSize:"1.2rem" }}>تعديل العضو</h3>
+            <h3 style={{ marginBottom:"1.5rem", color:"var(--text-primary)", fontWeight:700, fontSize:"1.2rem" }}>تعديل بيانات العضو</h3>
             <div style={{ display:"flex", flexDirection:"column", gap:"0.8rem" }}>
+              {/* صورة العضو */}
+              <div style={{ display:"flex", alignItems:"center", gap:"1rem", padding:"1rem", borderRadius:14, background:"rgba(237,144,4,0.06)", border:"1px solid rgba(237,144,4,0.15)" }}>
+                <div style={{ width:72, height:72, borderRadius:14, overflow:"hidden", flexShrink:0, background:"linear-gradient(135deg,var(--orange),var(--brown))", border:"2px solid rgba(237,144,4,0.4)" }}>
+                  <img src={editingMember.avatar||logoNoBg} alt="صورة العضو" style={{ width:"100%", height:"100%", objectFit:"cover" }} onError={e=>{(e.target as HTMLImageElement).src=logoNoBg;}}/>
+                </div>
+                <div style={{ flex:1, display:"flex", flexDirection:"column", gap:"0.5rem" }}>
+                  <p style={{ color:"var(--text-muted)", fontSize:"0.8rem", fontWeight:600 }}>صورة العضو</p>
+                  <input className="form-input" value={editingMember.avatar} onChange={e=>setEditingMember(v=>v?{...v,avatar:e.target.value}:v)} placeholder="رابط الصورة (URL)" style={{ fontSize:"0.85rem" }}/>
+                  <button type="button" className="btn-dark" style={{ fontSize:"0.8rem", padding:"0.4rem 0.8rem", display:"inline-flex", alignItems:"center", gap:4, width:"fit-content" }}
+                    onClick={()=>pickFile(url=>setEditingMember(v=>v?{...v,avatar:url}:v))}>
+                    📁 رفع صورة من الجهاز
+                  </button>
+                </div>
+              </div>
               <input className="form-input" value={editingMember.name} onChange={e=>setEditingMember(v=>v?{...v,name:e.target.value}:v)} placeholder="الاسم"/>
               <input className="form-input" value={editingMember.role} onChange={e=>setEditingMember(v=>v?{...v,role:e.target.value}:v)} placeholder="الدور"/>
               <input className="form-input" value={editingMember.bio} onChange={e=>setEditingMember(v=>v?{...v,bio:e.target.value}:v)} placeholder="النبذة"/>
