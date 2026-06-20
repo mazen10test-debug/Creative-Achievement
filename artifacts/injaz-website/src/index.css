@@ -799,9 +799,49 @@ html { scroll-behavior: smooth; }
 }
 
 /* ═══════════════════════════════════════════════
+   GALLERY CAPTION OVERLAY — show on parent hover
+═══════════════════════════════════════════════ */
+.gallery-item:hover .gallery-caption-overlay { opacity: 1 !important; }
+
+/* ═══════════════════════════════════════════════
+   FOUNDER SECTION — responsive grid
+═══════════════════════════════════════════════ */
+.founder-grid {
+  grid-template-columns: 1fr 1fr;
+  direction: rtl;
+}
+@media (max-width: 700px) {
+  .founder-grid {
+    grid-template-columns: 1fr !important;
+    gap: 2rem !important;
+  }
+  .founder-photo-frame {
+    width: 240px !important;
+    height: 300px !important;
+    margin: 0 auto;
+  }
+}
+.founder-photo-frame:hover {
+  transform: translateY(-4px) scale(1.01);
+  box-shadow: 0 28px 70px rgba(237,144,4,0.3), 0 8px 30px rgba(70,21,6,0.15) !important;
+}
+
+/* ═══════════════════════════════════════════════
+   QOMRA FONT — enforce on all text elements
+═══════════════════════════════════════════════ */
+h1, h2, h3, h4, h5, h6,
+button, input, textarea, select,
+.section-title, .btn-primary, .btn-dark,
+.glass-card, .timeline-card, .mom-overlay,
+nav, footer, .site-header {
+  font-family: 'Qomra', 'Tajawal', sans-serif !important;
+}
+
+/* ═══════════════════════════════════════════════
    DARK MODE SECTION BACKGROUNDS
 ═══════════════════════════════════════════════ */
 [data-theme="dark"] #about    { background: rgba(0,0,0,0.75); }
+[data-theme="dark"] #founder  { background: rgba(0,0,0,0.78); }
 [data-theme="dark"] #members  { background: rgba(5,1,0,0.80); }
 [data-theme="dark"] #games    { background: rgba(0,0,0,0.75); }
 [data-theme="dark"] #gallery  { background: rgba(5,1,0,0.80); }

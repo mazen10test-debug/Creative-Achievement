@@ -39,6 +39,8 @@ interface GalleryItem { id: number; url: string; caption: string; category: stri
 interface MemberOfMonth { name: string; achievement: string; imageUrl: string | null; }
 interface AdminUser { id: number; username: string; password: string; role: "superadmin"|"admin"; }
 interface FailedLogin { id: number; username: string; attemptedAt: string; location: string; }
+interface Founder { title: string; bio: string; imageUrl: string; }
+interface SiteStats { events: number; }
 
 // ─────────────────────────────────────────────
 // INITIAL DATA
@@ -63,6 +65,12 @@ const INITIAL_GAMES: Game[] = [
 const INITIAL_ADMINS: AdminUser[] = [
   { id: 1, username: "Admin", password: "Admin100", role: "superadmin" },
 ];
+const INITIAL_FOUNDER: Founder = {
+  title: "المؤسس",
+  bio: "شخصية ملهمة وراء كل إنجاز، أرسى دعائم هذه المجموعة بإيمانٍ راسخ بقدرة الشباب على صنع الفارق. اكتب هنا نبذة المؤسس وإنجازاته.",
+  imageUrl: "",
+};
+const INITIAL_STATS: SiteStats = { events: 8 };
 
 const INITIAL_GALLERY: GalleryItem[] = [
   { id:1, url:"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80", caption:"لقاء تأسيسي",     category:"صور" },
@@ -149,8 +157,9 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme, onAdmi
 
   const navLinks = [
     { label:"الرئيسية", href:"#hero" }, { label:"من نحن", href:"#about" },
-    { label:"الأعضاء", href:"#members" }, { label:"ألعابنا", href:"#games" },
-    { label:"المعرض", href:"#gallery" }, { label:"عضو الشهر", href:"#mom" },
+    { label:"المؤسس", href:"#founder" }, { label:"الأعضاء", href:"#members" },
+    { label:"ألعابنا", href:"#games" }, { label:"المعرض", href:"#gallery" },
+    { label:"عضو الشهر", href:"#mom" },
   ];
   const scrollTo = (href:string) => { document.querySelector(href)?.scrollIntoView({behavior:"smooth"}); setMenuOpen(false); };
 
@@ -474,19 +483,132 @@ function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedL
 }
 
 // ─────────────────────────────────────────────
+// FOUNDER SECTION
+// ─────────────────────────────────────────────
+function FounderSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }) {
+  const { ref, visible } = useScrollReveal();
+  const [founder, setFounder] = useLocalStorage<Founder>("injaz-founder", INITIAL_FOUNDER);
+
+  const pickFile = (onDone:(url:string)=>void) => {
+    const inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*";
+    inp.onchange = () => {
+      const file = inp.files?.[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = e => onDone(e.target?.result as string);
+      reader.readAsDataURL(file);
+    }; inp.click();
+  };
+
+  return (
+    <section id="founder" style={{ background: isDark ? "rgba(0,0,0,0.78)" : "linear-gradient(180deg,#fff 0%,#fff8f0 100%)" }}>
+      <div ref={ref} style={{ maxWidth:1100, margin:"0 auto", padding:"0 1rem" }}>
+        <h2 className={`section-title gradient-text ${visible?"animate-fadeInUp":"opacity-0"}`}>المؤسس</h2>
+        <div className={`section-divider ${visible?"animate-fadeInUp delay-100":"opacity-0"}`}/>
+
+        <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3rem", alignItems:"center" }} className="founder-grid">
+          {/* ── يسار: العنوان + النبذة ── */}
+          <div className={visible?"animate-fadeInRight":"opacity-0"} style={{ display:"flex", flexDirection:"column", gap:"1.2rem" }}>
+            <div>
+              {isAdmin ? (
+                <input className="form-input" value={founder.title} onChange={e=>setFounder(v=>({...v,title:e.target.value}))}
+                  placeholder="عنوان / اسم المؤسس"
+                  style={{ fontSize:"1.6rem", fontWeight:800, marginBottom:"0.5rem", fontFamily:"'Qomra','Tajawal',sans-serif", color:"var(--text-primary)" }}/>
+              ) : (
+                <h2 style={{ fontFamily:"'Qomra','Tajawal',sans-serif", fontSize:"clamp(1.5rem,4vw,2.3rem)", fontWeight:800, color:"var(--text-primary)", lineHeight:1.3 }}>
+                  {founder.title}
+                </h2>
+              )}
+              <div style={{ width:50, height:4, background:"linear-gradient(90deg,var(--orange),var(--brown))", borderRadius:2, marginTop:"0.7rem" }}/>
+            </div>
+
+            {isAdmin ? (
+              <textarea className="form-input" value={founder.bio} onChange={e=>setFounder(v=>({...v,bio:e.target.value}))}
+                rows={6} placeholder="النبذة التعريفية للمؤسس..."
+                style={{ lineHeight:2, fontSize:"1rem", resize:"vertical" }}/>
+            ) : (
+              <p style={{ color:"var(--text-secondary)", lineHeight:2, fontSize:"1rem", whiteSpace:"pre-line" }}>{founder.bio}</p>
+            )}
+
+            {isAdmin && (
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.5rem", padding:"1rem", borderRadius:14, background:"rgba(237,144,4,0.06)", border:"1px solid rgba(237,144,4,0.15)" }}>
+                <p style={{ color:"var(--text-muted)", fontSize:"0.8rem", fontWeight:700 }}>صورة المؤسس</p>
+                <input className="form-input" placeholder="رابط الصورة (URL)" value={founder.imageUrl}
+                  onChange={e=>setFounder(v=>({...v,imageUrl:e.target.value}))} style={{ fontSize:"0.88rem" }}/>
+                <button type="button" className="btn-dark" style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:"0.85rem", padding:"0.45rem 1rem", width:"fit-content" }}
+                  onClick={()=>pickFile(url=>setFounder(v=>({...v,imageUrl:url})))}>
+                  <span style={{ width:16, height:16 }}><Ico.Upload/></span>
+                  رفع صورة من الجهاز
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* ── يمين: الصورة ── */}
+          <div className={visible?"animate-fadeInLeft":"opacity-0"} style={{ display:"flex", justifyContent:"center" }}>
+            <div className="founder-photo-frame" style={{
+              width:300, height:380, borderRadius:24, overflow:"hidden", position:"relative",
+              background: isDark ? "linear-gradient(160deg,#1a0500,#0a0202)" : "linear-gradient(160deg,#fff6e8,#fde8bb)",
+              border: isDark ? "2px solid rgba(70,21,6,0.5)" : "2px solid rgba(237,144,4,0.3)",
+              boxShadow: isDark ? "0 20px 60px rgba(70,21,6,0.7), 0 0 60px rgba(70,21,6,0.3)" : "0 20px 60px rgba(237,144,4,0.25), 0 8px 30px rgba(70,21,6,0.1)",
+              transition:"all 0.4s ease",
+            }}>
+              {founder.imageUrl ? (
+                <img src={founder.imageUrl} alt={founder.title}
+                  style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top" }}
+                  onError={e=>{ (e.target as HTMLImageElement).src=logoNoBg; }}/>
+              ) : (
+                <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"1.2rem", padding:"1.5rem" }}>
+                  <img src={logoNoBg} alt="شعار" style={{ width:100, opacity:0.35, filter: isDark?"drop-shadow(0 0 20px rgba(70,21,6,0.8))":"drop-shadow(0 4px 16px rgba(237,144,4,0.4))" }}/>
+                  {isAdmin && (
+                    <p style={{ color:"var(--text-muted)", fontSize:"0.82rem", textAlign:"center", lineHeight:1.6 }}>
+                      أضف صورة المؤسس من خلال<br/>حقل رابط الصورة أو رفع ملف
+                    </p>
+                  )}
+                </div>
+              )}
+              {/* Decorative corner */}
+              <div style={{ position:"absolute", bottom:0, right:0, width:80, height:80, background:"linear-gradient(135deg,transparent 50%,rgba(237,144,4,0.15))", pointerEvents:"none" }}/>
+              <div style={{ position:"absolute", top:0, left:0, width:60, height:60, background:"linear-gradient(315deg,transparent 50%,rgba(70,21,6,0.1))", pointerEvents:"none" }}/>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─────────────────────────────────────────────
 // HERO SECTION
 // ─────────────────────────────────────────────
-function HeroSection({ onScrollDown, isDark }: { onScrollDown:()=>void; isDark:boolean }) {
+function HeroSection({ onScrollDown, isDark, isAdmin }: { onScrollDown:()=>void; isDark:boolean; isAdmin:boolean }) {
   const [mousePos, setMousePos] = useState({ x:0.5, y:0.5 });
+  const [members] = useLocalStorage<Member[]>("injaz-members-v2", INITIAL_MEMBERS);
+  const [games] = useLocalStorage<Game[]>("injaz-games", INITIAL_GAMES);
+  const [siteStats, setSiteStats] = useLocalStorage<SiteStats>("injaz-stats", INITIAL_STATS);
+  const [editingEvents, setEditingEvents] = useState(false);
+  const [eventsInput, setEventsInput] = useState(String(siteStats.events));
+
   useEffect(()=>{
     const fn=(e:MouseEvent)=>setMousePos({x:e.clientX/window.innerWidth,y:e.clientY/window.innerHeight});
     window.addEventListener("mousemove",fn); return()=>window.removeEventListener("mousemove",fn);
   },[]);
   const px=mousePos.x*30-15, py=mousePos.y*30-15;
 
+  const saveEvents = () => {
+    const n = parseInt(eventsInput) || 0;
+    setSiteStats(v=>({...v, events:n}));
+    setEditingEvents(false);
+  };
+
   const orbColor = isDark
     ? "radial-gradient(circle, rgba(70,21,6,0.7) 0%, transparent 70%)"
     : "radial-gradient(circle, rgba(237,144,4,0.18) 0%, transparent 70%)";
+
+  const stats = [
+    { num: `${members.length}+`, label: "أعضاء" },
+    { num: `${games.length}`, label: "ألعاب" },
+    { num: `${siteStats.events}+`, label: "فعاليات", editable: true },
+  ];
 
   return (
     <section id="hero" style={{ minHeight:"100vh", display:"flex", alignItems:"center", justifyContent:"center", position:"relative", overflow:"hidden", paddingTop:"calc(80px + 2rem)", background:"transparent" }}>
@@ -509,25 +631,40 @@ function HeroSection({ onScrollDown, isDark }: { onScrollDown:()=>void; isDark:b
           />
         </div>
 
-        <h1 className="shimmer-text animate-fadeInUp delay-100" style={{ fontFamily:"'Amiri',serif", fontSize:"clamp(2.2rem,6vw,4.5rem)", fontWeight:700, lineHeight:1.2, marginBottom:"0.5rem" }}>
+        <h1 className="shimmer-text animate-fadeInUp delay-100" style={{ fontFamily:"'Qomra','Tajawal',sans-serif", fontSize:"clamp(2.2rem,6vw,4.5rem)", fontWeight:700, lineHeight:1.2, marginBottom:"0.5rem" }}>
           الإنجاز الإبداعي
         </h1>
-        <p className="animate-fadeInUp delay-200" style={{ fontSize:"clamp(1rem,2.5vw,1.35rem)", color: isDark ? "rgba(245,168,50,0.8)" : "#5a3010", fontWeight:400, marginBottom:"0.8rem", lineHeight:1.7 }}>
+        <p className="animate-fadeInUp delay-200" style={{ fontFamily:"'Qomra','Tajawal',sans-serif", fontSize:"clamp(1rem,2.5vw,1.35rem)", color: isDark ? "rgba(245,168,50,0.8)" : "#5a3010", fontWeight:400, marginBottom:"0.8rem", lineHeight:1.7 }}>
           نبني الإبداع · نصنع الإنجاز · نحقق الأثر
         </p>
 
         <div className="animate-fadeInUp delay-300 hero-stats">
-          {[["٥+","أعضاء"],["٦","ألعاب"],["٨+","فعاليات"]].map(([n,l])=>(
-            <div key={l} className="glass-card-orange" style={{ padding:"0.8rem 1.2rem", textAlign:"center", minWidth:90 }}>
-              <div style={{ fontSize:"1.8rem", fontWeight:900, color:"var(--stat-val-color)", fontFamily:"'Qomra','Tajawal',sans-serif" }}>{n}</div>
-              <div style={{ fontSize:"0.85rem", color:"var(--orange-dark)", fontWeight:700, fontFamily:"'Qomra','Tajawal',sans-serif" }}>{l}</div>
+          {stats.map(s=>(
+            <div key={s.label} className="glass-card-orange" style={{ padding:"0.8rem 1.2rem", textAlign:"center", minWidth:90, position:"relative" }}>
+              {s.editable && isAdmin && editingEvents ? (
+                <div style={{ display:"flex", flexDirection:"column", gap:4, alignItems:"center" }}>
+                  <input value={eventsInput} onChange={e=>setEventsInput(e.target.value)} onBlur={saveEvents} onKeyDown={e=>e.key==="Enter"&&saveEvents()} autoFocus
+                    style={{ width:64, textAlign:"center", fontSize:"1.4rem", fontWeight:900, background:"rgba(237,144,4,0.12)", border:"1.5px solid var(--orange)", borderRadius:8, color:"var(--stat-val-color)", fontFamily:"'Qomra','Tajawal',sans-serif", outline:"none", padding:"2px 4px" }}/>
+                  <div style={{ fontSize:"0.75rem", color:"var(--orange-dark)", fontWeight:700, fontFamily:"'Qomra','Tajawal',sans-serif" }}>{s.label}</div>
+                </div>
+              ) : (
+                <>
+                  <div onClick={()=>{ if(s.editable&&isAdmin){ setEventsInput(String(siteStats.events)); setEditingEvents(true); } }}
+                    style={{ fontSize:"1.8rem", fontWeight:900, color:"var(--stat-val-color)", fontFamily:"'Qomra','Tajawal',sans-serif", cursor:s.editable&&isAdmin?"pointer":"default" }}
+                    title={s.editable&&isAdmin?"انقر لتعديل الرقم":undefined}>
+                    {s.num}
+                    {s.editable&&isAdmin && <span style={{ fontSize:"0.6rem", verticalAlign:"super", color:"var(--orange)", marginRight:2 }}>✎</span>}
+                  </div>
+                  <div style={{ fontSize:"0.85rem", color:"var(--orange-dark)", fontWeight:700, fontFamily:"'Qomra','Tajawal',sans-serif" }}>{s.label}</div>
+                </>
+              )}
             </div>
           ))}
         </div>
 
         <div className="animate-fadeInUp delay-400" style={{ display:"flex", gap:"1rem", justifyContent:"center", flexWrap:"wrap" }}>
-          <button className="btn-primary" style={{ padding:"0.85rem 2rem", fontSize:"1.05rem" }} onClick={()=>document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})}>اكتشف أكثر</button>
-          <button className="btn-dark" style={{ padding:"0.85rem 2rem", fontSize:"1.05rem" }} onClick={()=>document.querySelector("#games")?.scrollIntoView({behavior:"smooth"})}>ألعابنا</button>
+          <button className="btn-primary" style={{ padding:"0.85rem 2rem", fontSize:"1.05rem", fontFamily:"'Qomra','Tajawal',sans-serif" }} onClick={()=>document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})}>اكتشف أكثر</button>
+          <button className="btn-dark" style={{ padding:"0.85rem 2rem", fontSize:"1.05rem", fontFamily:"'Qomra','Tajawal',sans-serif" }} onClick={()=>document.querySelector("#games")?.scrollIntoView({behavior:"smooth"})}>ألعابنا</button>
         </div>
 
         {/* Scroll indicator */}
@@ -535,7 +672,7 @@ function HeroSection({ onScrollDown, isDark }: { onScrollDown:()=>void; isDark:b
           <div style={{ width:28, height:44, border:`2px solid ${isDark?"#461506":"var(--orange)"}`, borderRadius:14, margin:"0 auto", position:"relative" }}>
             <div style={{ width:6, height:6, background: isDark?"#461506":"var(--orange)", borderRadius:"50%", position:"absolute", top:8, left:"50%", transform:"translateX(-50%)", animation:"float 1.5s ease-in-out infinite" }}/>
           </div>
-          <p style={{ fontSize:"0.75rem", marginTop:"0.4rem", color: isDark?"rgba(70,21,6,0.9)":"var(--orange-dark)" }}>مرر للأسفل</p>
+          <p style={{ fontSize:"0.75rem", marginTop:"0.4rem", color: isDark?"rgba(70,21,6,0.9)":"var(--orange-dark)", fontFamily:"'Qomra','Tajawal',sans-serif" }}>مرر للأسفل</p>
         </div>
       </div>
     </section>
@@ -951,14 +1088,34 @@ function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
         )}
         {isAdmin && showAdd && (
           <div className="glass-card animate-fadeInUp" style={{ padding:"1.5rem", marginBottom:"2rem" }}>
-            <h3 style={{ marginBottom:"1rem", color:"var(--text-primary)", fontWeight:700 }}>صورة جديدة</h3>
-            <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(200px,1fr))", gap:"0.8rem" }}>
-              <input className="form-input" placeholder="رابط الصورة *" value={newUrl} onChange={e=>setNewUrl(e.target.value)} style={{ gridColumn:"1/-1" }}/>
+            <h3 style={{ marginBottom:"1rem", color:"var(--text-primary)", fontWeight:700, fontFamily:"'Qomra','Tajawal',sans-serif" }}>إضافة صورة / مقطع</h3>
+            {/* معاينة */}
+            {newUrl && (
+              <div style={{ marginBottom:"1rem", borderRadius:12, overflow:"hidden", maxHeight:160, background:"rgba(0,0,0,0.1)" }}>
+                <img src={newUrl} alt="معاينة" style={{ width:"100%", maxHeight:160, objectFit:"cover" }} onError={e=>{(e.target as HTMLImageElement).style.display="none";}}/>
+              </div>
+            )}
+            <div style={{ display:"grid", gridTemplateColumns:"1fr auto", gap:"0.5rem", marginBottom:"0.5rem" }}>
+              <input className="form-input" placeholder="رابط الصورة (URL) *" value={newUrl} onChange={e=>setNewUrl(e.target.value)}/>
+              <button type="button" className="btn-dark" style={{ whiteSpace:"nowrap", display:"inline-flex", alignItems:"center", gap:4, padding:"0.6rem 0.9rem", fontSize:"0.85rem" }}
+                onClick={()=>{
+                  const inp=document.createElement("input"); inp.type="file"; inp.accept="image/*";
+                  inp.onchange=()=>{ const file=inp.files?.[0]; if(!file) return; const reader=new FileReader(); reader.onload=e=>setNewUrl(e.target?.result as string); reader.readAsDataURL(file); };
+                  inp.click();
+                }}>
+                <span style={{ width:16, height:16 }}><Ico.Upload/></span>رفع
+              </button>
+            </div>
+            <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"0.5rem" }}>
               <input className="form-input" placeholder="التسمية" value={newCaption} onChange={e=>setNewCaption(e.target.value)}/>
-              <input className="form-input" placeholder="التصنيف" value={newCategory} onChange={e=>setNewCategory(e.target.value)}/>
+              <select className="form-input" value={newCategory} onChange={e=>setNewCategory(e.target.value)}>
+                <option value="">التصنيف</option>
+                <option value="صور">صور</option>
+                <option value="مقاطع">مقاطع</option>
+              </select>
             </div>
             <div style={{ display:"flex", gap:"0.5rem", marginTop:"1rem" }}>
-              <button className="btn-primary" onClick={()=>{ if(!newUrl) return; setGallery(g=>[...g,{id:Date.now(),url:newUrl,caption:newCaption,category:newCategory||"متنوع"}]); setNewUrl(""); setNewCaption(""); setNewCategory(""); setShowAdd(false); }}>إضافة</button>
+              <button className="btn-primary" onClick={()=>{ if(!newUrl) return; setGallery(g=>[...g,{id:Date.now(),url:newUrl,caption:newCaption,category:newCategory||"صور"}]); setNewUrl(""); setNewCaption(""); setNewCategory(""); setShowAdd(false); }}>إضافة</button>
               <button className="btn-dark" onClick={()=>setShowAdd(false)}>إلغاء</button>
             </div>
           </div>
@@ -967,22 +1124,23 @@ function GallerySection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
         <div style={{ display:"grid", gridTemplateColumns:"repeat(auto-fill,minmax(220px,1fr))", gap:"1rem" }}>
           {filtered.map((item,i)=>(
             <div key={item.id} className={`gallery-item ${visible?"animate-fadeInUp":"opacity-0"}`}
-              style={{ animationDelay:`${0.1+i*0.06}s`, position:"relative" }}
+              style={{ animationDelay:`${0.1+i*0.06}s`, position:"relative", cursor:"pointer" }}
               onClick={()=>openLightbox(item)}>
               <img src={item.url} alt={item.caption} loading="lazy" onError={e=>{(e.target as HTMLImageElement).src="https://via.placeholder.com/400x300/461506/ED9004?text=صورة";}}/>
-              <div style={{ position:"absolute", inset:0, background:"linear-gradient(0deg,rgba(0,0,0,0.75) 0%,transparent 60%)", opacity:0, transition:"opacity 0.3s ease", display:"flex", alignItems:"flex-end", padding:"0.8rem" }}
-                onMouseEnter={e=>(e.currentTarget.style.opacity="1")}
-                onMouseLeave={e=>(e.currentTarget.style.opacity="0")}>
+              {/* Admin delete — always visible */}
+              {isAdmin && (
+                <button style={{ position:"absolute", top:8, left:8, background:"rgba(220,38,38,0.85)", border:"none", borderRadius:8, cursor:"pointer", color:"white", width:30, height:30, display:"flex", alignItems:"center", justifyContent:"center", zIndex:10, boxShadow:"0 2px 8px rgba(0,0,0,0.4)" }}
+                  onClick={e=>{ e.stopPropagation(); setGallery(g=>g.filter(x=>x.id!==item.id)); }}>
+                  <span style={{ width:14, height:14 }}><Ico.Trash/></span>
+                </button>
+              )}
+              {/* Caption overlay on hover */}
+              <div style={{ position:"absolute", inset:0, background:"linear-gradient(0deg,rgba(0,0,0,0.78) 0%,transparent 55%)", opacity:0, transition:"opacity 0.3s ease", display:"flex", alignItems:"flex-end", padding:"0.8rem", pointerEvents:"none" }}
+                className="gallery-caption-overlay">
                 <div>
-                  <p style={{ color:"white", fontWeight:600, fontSize:"0.9rem" }}>{item.caption}</p>
-                  <span style={{ color:"rgba(237,144,4,0.9)", fontSize:"0.75rem" }}>{item.category}</span>
+                  <p style={{ color:"white", fontWeight:600, fontSize:"0.9rem", fontFamily:"'Qomra','Tajawal',sans-serif" }}>{item.caption}</p>
+                  <span style={{ color:"rgba(237,144,4,0.9)", fontSize:"0.75rem", fontFamily:"'Qomra','Tajawal',sans-serif" }}>{item.category}</span>
                 </div>
-                {isAdmin && (
-                  <button style={{ position:"absolute", top:8, left:8, background:"rgba(220,38,38,0.8)", border:"none", borderRadius:6, cursor:"pointer", color:"white", width:28, height:28, display:"flex", alignItems:"center", justifyContent:"center" }}
-                    onClick={e=>{ e.stopPropagation(); setGallery(g=>g.filter(x=>x.id!==item.id)); }}>
-                    <span style={{ width:14, height:14 }}><Ico.Trash/></span>
-                  </button>
-                )}
               </div>
             </div>
           ))}
@@ -1146,7 +1304,7 @@ function Footer({ onShowCode, isDark }: { onShowCode:()=>void; isDark:boolean })
         <h3 style={{ fontFamily:"'Amiri',serif", fontSize:"1.4rem", color:"rgba(237,144,4,0.9)", marginBottom:"0.4rem" }}>الإنجاز الإبداعي</h3>
         <p style={{ fontSize:"0.9rem", marginBottom:"2rem", color:"rgba(255,255,255,0.45)", lineHeight:1.7 }}>نبني الإبداع · نصنع الإنجاز · نحقق الأثر</p>
         <div style={{ display:"flex", justifyContent:"center", gap:"1rem", flexWrap:"wrap", marginBottom:"2rem" }}>
-          {[["الرئيسية","hero"],["من نحن","about"],["الأعضاء","members"],["الألعاب","games"],["المعرض","gallery"]].map(([l,id])=>(
+          {[["الرئيسية","hero"],["من نحن","about"],["المؤسس","founder"],["الأعضاء","members"],["الألعاب","games"],["المعرض","gallery"]].map(([l,id])=>(
             <button key={id} style={{ background:"none", border:"none", color:"rgba(255,255,255,0.5)", cursor:"pointer", fontFamily:"'Tajawal',sans-serif", fontSize:"0.9rem", transition:"color 0.2s" }}
               onMouseEnter={e=>(e.currentTarget.style.color="rgba(237,144,4,0.9)")}
               onMouseLeave={e=>(e.currentTarget.style.color="rgba(255,255,255,0.5)")}
@@ -1241,8 +1399,9 @@ export default function App() {
 
       {/* Sections */}
       <main style={{ position:"relative", zIndex:1 }}>
-        <HeroSection onScrollDown={()=>document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})} isDark={isDark}/>
+        <HeroSection onScrollDown={()=>document.querySelector("#about")?.scrollIntoView({behavior:"smooth"})} isDark={isDark} isAdmin={isAdmin}/>
         <AboutSection isDark={isDark}/>
+        <FounderSection isAdmin={isAdmin} isDark={isDark}/>
         <MembersSection isAdmin={isAdmin} isDark={isDark}/>
         <GamesSection isAdmin={isAdmin} isDark={isDark}/>
         <GallerySection isAdmin={isAdmin} isDark={isDark}/>
