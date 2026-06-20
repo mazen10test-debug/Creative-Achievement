@@ -505,8 +505,38 @@ function FounderSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
         <h2 className={`section-title gradient-text ${visible?"animate-fadeInUp":"opacity-0"}`}>المؤسس</h2>
         <div className={`section-divider ${visible?"animate-fadeInUp delay-100":"opacity-0"}`}/>
 
+        {/* RTL: أول عنصر = يمين ← نضع الصورة أولاً */}
         <div style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"3rem", alignItems:"center" }} className="founder-grid">
-          {/* ── يسار: العنوان + النبذة ── */}
+
+          {/* ── يمين: الصورة (أولاً في DOM) ── */}
+          <div className={visible?"animate-fadeInLeft":"opacity-0"} style={{ display:"flex", justifyContent:"center" }}>
+            <div className="founder-photo-frame" style={{
+              width:300, height:380, borderRadius:24, overflow:"hidden", position:"relative",
+              background: isDark ? "linear-gradient(160deg,#1a0500,#0a0202)" : "linear-gradient(160deg,#fff6e8,#fde8bb)",
+              border: isDark ? "2px solid rgba(70,21,6,0.5)" : "2px solid rgba(237,144,4,0.3)",
+              boxShadow: isDark ? "0 20px 60px rgba(70,21,6,0.7), 0 0 60px rgba(70,21,6,0.3)" : "0 20px 60px rgba(237,144,4,0.25), 0 8px 30px rgba(70,21,6,0.1)",
+              transition:"all 0.4s ease",
+            }}>
+              {founder.imageUrl ? (
+                <img src={founder.imageUrl} alt={founder.title}
+                  style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top" }}
+                  onError={e=>{ (e.target as HTMLImageElement).src=logoNoBg; }}/>
+              ) : (
+                <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"1.2rem", padding:"1.5rem" }}>
+                  <img src={logoNoBg} alt="شعار" style={{ width:100, opacity:0.35, filter: isDark?"drop-shadow(0 0 20px rgba(70,21,6,0.8))":"drop-shadow(0 4px 16px rgba(237,144,4,0.4))" }}/>
+                  {isAdmin && (
+                    <p style={{ color:"var(--text-muted)", fontSize:"0.82rem", textAlign:"center", lineHeight:1.6 }}>
+                      أضف صورة المؤسس من خلال<br/>حقل رابط الصورة أو رفع ملف
+                    </p>
+                  )}
+                </div>
+              )}
+              <div style={{ position:"absolute", bottom:0, left:0, width:80, height:80, background:"linear-gradient(135deg,transparent 50%,rgba(237,144,4,0.15))", pointerEvents:"none" }}/>
+              <div style={{ position:"absolute", top:0, right:0, width:60, height:60, background:"linear-gradient(315deg,transparent 50%,rgba(70,21,6,0.1))", pointerEvents:"none" }}/>
+            </div>
+          </div>
+
+          {/* ── يسار: العنوان + النبذة (ثانياً في DOM) ── */}
           <div className={visible?"animate-fadeInRight":"opacity-0"} style={{ display:"flex", flexDirection:"column", gap:"1.2rem" }}>
             <div>
               {isAdmin ? (
@@ -543,34 +573,6 @@ function FounderSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boolean }
             )}
           </div>
 
-          {/* ── يمين: الصورة ── */}
-          <div className={visible?"animate-fadeInLeft":"opacity-0"} style={{ display:"flex", justifyContent:"center" }}>
-            <div className="founder-photo-frame" style={{
-              width:300, height:380, borderRadius:24, overflow:"hidden", position:"relative",
-              background: isDark ? "linear-gradient(160deg,#1a0500,#0a0202)" : "linear-gradient(160deg,#fff6e8,#fde8bb)",
-              border: isDark ? "2px solid rgba(70,21,6,0.5)" : "2px solid rgba(237,144,4,0.3)",
-              boxShadow: isDark ? "0 20px 60px rgba(70,21,6,0.7), 0 0 60px rgba(70,21,6,0.3)" : "0 20px 60px rgba(237,144,4,0.25), 0 8px 30px rgba(70,21,6,0.1)",
-              transition:"all 0.4s ease",
-            }}>
-              {founder.imageUrl ? (
-                <img src={founder.imageUrl} alt={founder.title}
-                  style={{ width:"100%", height:"100%", objectFit:"cover", objectPosition:"center top" }}
-                  onError={e=>{ (e.target as HTMLImageElement).src=logoNoBg; }}/>
-              ) : (
-                <div style={{ width:"100%", height:"100%", display:"flex", flexDirection:"column", alignItems:"center", justifyContent:"center", gap:"1.2rem", padding:"1.5rem" }}>
-                  <img src={logoNoBg} alt="شعار" style={{ width:100, opacity:0.35, filter: isDark?"drop-shadow(0 0 20px rgba(70,21,6,0.8))":"drop-shadow(0 4px 16px rgba(237,144,4,0.4))" }}/>
-                  {isAdmin && (
-                    <p style={{ color:"var(--text-muted)", fontSize:"0.82rem", textAlign:"center", lineHeight:1.6 }}>
-                      أضف صورة المؤسس من خلال<br/>حقل رابط الصورة أو رفع ملف
-                    </p>
-                  )}
-                </div>
-              )}
-              {/* Decorative corner */}
-              <div style={{ position:"absolute", bottom:0, right:0, width:80, height:80, background:"linear-gradient(135deg,transparent 50%,rgba(237,144,4,0.15))", pointerEvents:"none" }}/>
-              <div style={{ position:"absolute", top:0, left:0, width:60, height:60, background:"linear-gradient(315deg,transparent 50%,rgba(70,21,6,0.1))", pointerEvents:"none" }}/>
-            </div>
-          </div>
         </div>
       </div>
     </section>
@@ -684,6 +686,8 @@ function HeroSection({ onScrollDown, isDark, isAdmin }: { onScrollDown:()=>void;
 // ─────────────────────────────────────────────
 function AboutSection({ isDark }: { isDark:boolean }) {
   const { ref, visible } = useScrollReveal();
+  const [members] = useLocalStorage<Member[]>("injaz-members-v2", INITIAL_MEMBERS);
+  const [siteStats] = useLocalStorage<SiteStats>("injaz-stats", INITIAL_STATS);
   return (
     <section id="about" style={{ background: isDark ? "rgba(0,0,0,0.78)" : "linear-gradient(180deg,#fff8f0 0%,#fff 100%)" }}>
       <div ref={ref} style={{ maxWidth:1100, margin:"0 auto", padding:"0 1rem" }}>
@@ -733,7 +737,7 @@ function AboutSection({ isDark }: { isDark:boolean }) {
         </div>
 
         <div className={`${visible?"animate-fadeInUp delay-400":"opacity-0"}`} style={{ display:"grid", gridTemplateColumns:"repeat(auto-fit,minmax(150px,1fr))", gap:"1rem", marginTop:"3rem" }}>
-          {[{icon:"🎯",label:"هدفنا الأسمى",val:"التميّز"},{icon:"🌟",label:"أعضاء نشطون",val:"٥+"},{icon:"🏆",label:"فعاليات منجزة",val:"٨+"},{icon:"💡",label:"أفكار مبتكرة",val:"∞"}].map(s=>(
+          {[{icon:"🎯",label:"هدفنا الأسمى",val:"التميّز"},{icon:"🌟",label:"أعضاء نشطون",val:`${members.length}+`},{icon:"🏆",label:"فعاليات منجزة",val:`${siteStats.events}+`},{icon:"💡",label:"أفكار مبتكرة",val:"∞"}].map(s=>(
             <div key={s.label} className="glass-card-orange" style={{ padding:"1.2rem", textAlign:"center" }}>
               <div style={{ fontSize:"2rem", marginBottom:"0.3rem" }}>{s.icon}</div>
               <div style={{ fontSize:"1.5rem", fontWeight:800, color:"var(--stat-val-color)" }}>{s.val}</div>
