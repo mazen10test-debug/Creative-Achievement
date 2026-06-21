@@ -37,7 +37,9 @@ interface Member { id: number; name: string; role: string; bio: string; avatar: 
 interface Game { id: number; title: string; description: string; icon: string; color: string; players: string; duration: string; instructions: string; }
 interface GalleryItem { id: number; url: string; caption: string; category: string; }
 interface MemberOfMonth { name: string; achievement: string; imageUrl: string | null; }
-interface AdminUser { id: number; username: string; password: string; role: "superadmin"|"admin"; }
+interface AdminUser { id: number; username: string; password: string; role: "supervisor"|"superadmin"|"admin"; }
+interface Suggestion { id: number; name: string; text: string; createdAt: string; isAnonymous: boolean; }
+interface BannedUser { id: number; identifier: string; reason: string; bannedAt: string; }
 interface FailedLogin { id: number; username: string; attemptedAt: string; location: string; }
 interface Founder { title: string; bio: string; imageUrl: string; }
 interface SiteStats { events: number; }
@@ -71,6 +73,20 @@ const INITIAL_FOUNDER: Founder = {
   imageUrl: "",
 };
 const INITIAL_STATS: SiteStats = { events: 8 };
+
+// ─────────────────────────────────────────────
+// OFFENSIVE WORDS FILTER (Arabic)
+// ─────────────────────────────────────────────
+const OFFENSIVE_WORDS = [
+  "كلب","حمار","خنزير","غبي","احمق","أحمق","معتوه","ابن الحرام","ابن القحبة",
+  "زبالة","مجنون","كذاب","لعين","ملعون","خرا","خره","زفت","شرموط","عاهرة",
+  "قحبة","منيوك","متخلف","وسخ","يلعن","اللعن","طز","تبا","نيك","مص","شذوذ",
+  "عبيط","بليد","نذل","جاهل","حقير","وضيع","ثور","بهيم","قرد","نغل",
+];
+function containsOffensiveWord(text: string): boolean {
+  const lower = text.toLowerCase();
+  return OFFENSIVE_WORDS.some(w => lower.includes(w));
+}
 
 const INITIAL_GALLERY: GalleryItem[] = [
   { id:1, url:"https://images.unsplash.com/photo-1529156069898-49953e39b3ac?w=600&q=80", caption:"لقاء تأسيسي",     category:"صور" },
@@ -160,6 +176,7 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme, onAdmi
     { label:"المؤسس", href:"#founder" }, { label:"الأعضاء", href:"#members" },
     { label:"ألعابنا", href:"#games" }, { label:"المعرض", href:"#gallery" },
     { label:"عضو الشهر", href:"#mom" },
+    { label:"صندوق الاقتراحات", href:"#suggestions" },
   ];
   const scrollTo = (href:string) => { document.querySelector(href)?.scrollIntoView({behavior:"smooth"}); setMenuOpen(false); };
 
@@ -175,7 +192,7 @@ function Header({ isAdmin, isDark, onLoginClick, onLogout, onToggleTheme, onAdmi
           {/* Center: Logo + Name */}
           <div style={{ flex:1, display:"flex", justifyContent:"center", alignItems:"center", gap:"0.6rem" }}>
             <img src={logoNoBg} alt="شعار" style={{ height:42, objectFit:"contain", filter:"drop-shadow(0 2px 8px rgba(237,144,4,0.5))" }}/>
-            <span style={{ fontFamily:"'Amiri',serif", fontSize:"1.15rem", fontWeight:700, color:"rgba(237,144,4,0.95)", letterSpacing:"0.02em", whiteSpace:"nowrap" }}>
+            <span style={{ fontFamily:"'Qomra','Tajawal',sans-serif", fontSize:"1.18rem", fontWeight:900, color:"rgba(237,144,4,0.95)", letterSpacing:"0.04em", whiteSpace:"nowrap", textShadow:"0 1px 8px rgba(237,144,4,0.3)" }}>
               الإنجاز الإبداعي
             </span>
           </div>
@@ -323,18 +340,20 @@ function AuthModal({ onClose, onSuccess, admins, onFailedAttempt }: {
 // ─────────────────────────────────────────────
 // ADMIN CENTER MODAL
 // ─────────────────────────────────────────────
-function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedLogins, currentUser }: {
+function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedLogins, currentUser, bannedUsers, setBannedUsers }: {
   onClose:()=>void;
   admins: AdminUser[]; setAdmins:(v:AdminUser[]|((_:AdminUser[])=>AdminUser[]))=>void;
   failedLogins: FailedLogin[]; setFailedLogins:(v:FailedLogin[]|((_:FailedLogin[])=>FailedLogin[]))=>void;
   currentUser: string;
+  bannedUsers: BannedUser[]; setBannedUsers:(v:BannedUser[]|((_:BannedUser[])=>BannedUser[]))=>void;
 }) {
-  const [tab, setTab] = useState<"attempts"|"admins">("attempts");
-  const [newUser, setNewUser] = useState({ username:"", password:"", role:"admin" as "superadmin"|"admin" });
+  const [tab, setTab] = useState<"attempts"|"admins"|"bans">("attempts");
+  const [newUser, setNewUser] = useState({ username:"", password:"", role:"admin" as "supervisor"|"superadmin"|"admin" });
   const [showNewPass, setShowNewPass] = useState(false);
   const [addErr, setAddErr] = useState("");
   const currentAdmin = admins.find(a=>a.username===currentUser);
-  const isSuperAdmin = currentAdmin?.role==="superadmin";
+  const isSuperAdmin = currentAdmin?.role==="superadmin" || currentAdmin?.role==="supervisor";
+  const isSupervisor = currentAdmin?.role==="supervisor";
 
   const addAdmin = () => {
     setAddErr("");
@@ -364,7 +383,7 @@ function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedL
 
           {/* Tabs */}
           <div style={{ display:"flex", borderBottom:"1px solid rgba(220,38,38,0.2)", background:"rgba(220,38,38,0.05)" }}>
-            {([["attempts","🚨 محاولات الدخول الفاشلة"],["admins","👥 إدارة الإداريين"]] as const).map(([key,label])=>(
+            {([["attempts","🚨 محاولات الدخول الفاشلة"],["admins","👥 إدارة الإداريين"],["bans","🚫 قائمة الحظر"]] as const).map(([key,label])=>(
               <button key={key} onClick={()=>setTab(key)}
                 style={{ flex:1, padding:"0.8rem", background:"none", border:"none", cursor:"pointer", fontFamily:"'Tajawal',sans-serif", fontSize:"0.9rem", fontWeight:600, color: tab===key ? "#ef4444" : "var(--text-secondary)", borderBottom: tab===key ? "2px solid #ef4444" : "2px solid transparent", transition:"all 0.2s" }}>
                 {label}
@@ -426,8 +445,8 @@ function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedL
                       </span>
                       <div style={{ flex:1 }}>
                         <div style={{ fontWeight:700, color:"var(--text-primary)", fontSize:"0.9rem" }}>{a.username}</div>
-                        <div style={{ fontSize:"0.75rem", color: a.role==="superadmin"?"#ef4444":"var(--orange-dark)", fontWeight:600 }}>
-                          {a.role==="superadmin" ? "⭐ مدير رئيسي" : "🔑 مدير"}
+                        <div style={{ fontSize:"0.75rem", color: a.role==="supervisor"?"#7c3aed":a.role==="superadmin"?"#ef4444":"var(--orange-dark)", fontWeight:600 }}>
+                          {a.role==="supervisor" ? "👑 مشرف" : a.role==="superadmin" ? "⭐ مدير رئيسي" : "🔑 مدير"}
                         </div>
                       </div>
                       {a.username!==currentUser && isSuperAdmin && (
@@ -458,9 +477,10 @@ function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedL
                         </button>
                       </div>
                     </div>
-                    <select className="form-input" value={newUser.role} onChange={e=>setNewUser(v=>({...v,role:e.target.value as "superadmin"|"admin"}))} style={{ marginTop:"0.6rem", width:"100%" }}>
+                    <select className="form-input" value={newUser.role} onChange={e=>setNewUser(v=>({...v,role:e.target.value as "supervisor"|"superadmin"|"admin"}))} style={{ marginTop:"0.6rem", width:"100%" }}>
                       <option value="admin">مدير عادي</option>
                       <option value="superadmin">مدير رئيسي</option>
+                      {isSupervisor && <option value="supervisor">مشرف</option>}
                     </select>
                     {addErr && <p style={{ color:"#ef4444", fontSize:"0.82rem", marginTop:"0.4rem" }}>{addErr}</p>}
                     <button className="btn-primary" onClick={addAdmin} style={{ marginTop:"0.8rem", display:"flex", alignItems:"center", gap:6, fontSize:"0.9rem", padding:"0.55rem 1.2rem", background:"linear-gradient(135deg,#dc2626,#b91c1c)" }}>
@@ -471,6 +491,44 @@ function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedL
                 ) : (
                   <div style={{ textAlign:"center", padding:"1.5rem", background:"rgba(220,38,38,0.05)", borderRadius:12, border:"1px dashed rgba(220,38,38,0.2)" }}>
                     <p style={{ color:"var(--text-muted)", fontSize:"0.85rem" }}>صلاحية إضافة المدراء متاحة للمدير الرئيسي فقط</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+
+            {tab==="bans" && (
+              <div>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"1rem" }}>
+                  <p style={{ color:"var(--text-muted)", fontSize:"0.82rem" }}>{bannedUsers.length} مستخدم محظور</p>
+                  {bannedUsers.length>0 && (
+                    <button onClick={()=>setBannedUsers([])} style={{ background:"rgba(220,38,38,0.1)", border:"1px solid rgba(220,38,38,0.3)", borderRadius:8, padding:"0.3rem 0.7rem", cursor:"pointer", color:"#ef4444", fontSize:"0.78rem", fontFamily:"'Tajawal',sans-serif" }}>
+                      رفع الحظر عن الكل
+                    </button>
+                  )}
+                </div>
+                {bannedUsers.length===0 ? (
+                  <div style={{ textAlign:"center", padding:"3rem 0", color:"var(--text-muted)" }}>
+                    <div style={{ fontSize:"3rem", marginBottom:"0.5rem" }}>✅</div>
+                    <p>لا يوجد مستخدمون محظورون</p>
+                  </div>
+                ) : (
+                  <div style={{ display:"flex", flexDirection:"column", gap:"0.6rem" }}>
+                    {bannedUsers.map(b=>(
+                      <div key={b.id} style={{ display:"flex", alignItems:"flex-start", gap:"0.8rem", padding:"0.8rem 1rem", borderRadius:10, background:"rgba(220,38,38,0.06)", border:"1px solid rgba(220,38,38,0.15)" }}>
+                        <span style={{ fontSize:"1.3rem", marginTop:2 }}>🚫</span>
+                        <div style={{ flex:1 }}>
+                          <div style={{ display:"flex", justifyContent:"space-between", flexWrap:"wrap", gap:"0.3rem" }}>
+                            <span style={{ color:"#ef4444", fontWeight:700, fontSize:"0.9rem" }}>{b.identifier}</span>
+                            <span style={{ color:"var(--text-muted)", fontSize:"0.78rem" }}>{b.bannedAt}</span>
+                          </div>
+                          <div style={{ color:"var(--text-secondary)", fontSize:"0.82rem", marginTop:"0.2rem" }}>السبب: {b.reason}</div>
+                        </div>
+                        <button onClick={()=>setBannedUsers(prev=>prev.filter(x=>x.id!==b.id))} style={{ background:"rgba(22,163,74,0.12)", border:"1px solid rgba(22,163,74,0.3)", borderRadius:8, padding:"0.25rem 0.6rem", cursor:"pointer", color:"#16a34a", fontSize:"0.75rem", fontFamily:"'Tajawal',sans-serif", whiteSpace:"nowrap" }}>
+                          فك الحظر
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 )}
               </div>
@@ -1218,7 +1276,7 @@ function MemberOfMonthSection({ isAdmin, isDark }: { isAdmin:boolean; isDark:boo
               </div>
               {isAdmin && (
                 <div style={{ marginTop:"1rem" }}>
-                  <input ref={fileRef} type="file" accept="image/*" onChange={e=>{ const f=e.target.files?.[0]; if(f) setMom(m=>({...m,imageUrl:URL.createObjectURL(f)})); }} style={{ display:"none" }}/>
+                  <input ref={fileRef} type="file" accept="image/*" onChange={e=>{ const f=e.target.files?.[0]; if(!f) return; const reader=new FileReader(); reader.onload=ev=>setMom(m=>({...m,imageUrl:ev.target?.result as string})); reader.readAsDataURL(f); }} style={{ display:"none" }}/>
                   <button className="btn-primary" style={{ display:"inline-flex", alignItems:"center", gap:6, fontSize:"0.85rem" }} onClick={()=>fileRef.current?.click()}>
                     <span style={{ width:16, height:16 }}><Ico.Upload/></span>
                     {mom.imageUrl?"تغيير الصورة":"رفع صورة الخلفية"}
@@ -1290,10 +1348,145 @@ function CodeViewerModal({ onClose }: { onClose:()=>void }) {
   );
 }
 
+
+// ─────────────────────────────────────────────
+// SUGGESTION BOX SECTION
+// ─────────────────────────────────────────────
+function SuggestionBoxSection({ isDark, bannedUsers, setBannedUsers, suggestions, setSuggestions }: {
+  isDark:boolean;
+  bannedUsers: BannedUser[]; setBannedUsers:(v:BannedUser[]|((_:BannedUser[])=>BannedUser[]))=>void;
+  suggestions: Suggestion[]; setSuggestions:(v:Suggestion[]|((_:Suggestion[])=>Suggestion[]))=>void;
+}) {
+  const { ref, visible } = useScrollReveal();
+  const [name, setName] = useState("");
+  const [isAnonymous, setIsAnonymous] = useState(false);
+  const [text, setText] = useState("");
+  const [submitMsg, setSubmitMsg] = useState<{type:"success"|"error"|"warn"; msg:string}|null>(null);
+
+  const displayName = isAnonymous ? "" : name.trim();
+  const isBanned = bannedUsers.some(b =>
+    b.identifier === (displayName || "مجهول") || b.identifier === name.trim()
+  );
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if(!text.trim()) { setSubmitMsg({type:"error",msg:"يرجى كتابة الاقتراح أولاً"}); return; }
+    const identifier = isAnonymous ? "مجهول" : (name.trim() || "مجهول");
+    if(bannedUsers.some(b=>b.identifier===identifier||b.identifier===name.trim())) {
+      setSubmitMsg({type:"error",msg:"❌ أنت محظور من إرسال الاقتراحات"}); return;
+    }
+    if(containsOffensiveWord(text)) {
+      const newBan: BannedUser = { id:Date.now(), identifier, reason:"إرسال محتوى مسيء في صندوق الاقتراحات", bannedAt: new Date().toLocaleString("ar-SA",{dateStyle:"short",timeStyle:"medium"}) };
+      setBannedUsers(prev=>[...prev,newBan]);
+      setSubmitMsg({type:"warn",msg:"⛔ تم حظرك بسبب استخدام كلمات مسيئة"});
+      setText(""); return;
+    }
+    const newSuggestion: Suggestion = {
+      id: Date.now(),
+      name: isAnonymous ? "مجهول" : (name.trim() || "مجهول"),
+      text: text.trim(),
+      createdAt: new Date().toLocaleString("ar-SA",{dateStyle:"short",timeStyle:"medium"}),
+      isAnonymous,
+    };
+    setSuggestions(prev=>[...prev, newSuggestion]);
+    setText(""); setName("");
+    setSubmitMsg({type:"success",msg:"✅ تم إرسال اقتراحك بنجاح! شكراً لك"});
+    setTimeout(()=>setSubmitMsg(null),4000);
+  };
+
+  return (
+    <section id="suggestions" style={{ background: isDark?"rgba(5,1,0,0.82)":"linear-gradient(180deg,#fff 0%,#fff8f0 100%)" }}>
+      <div ref={ref} style={{ maxWidth:900, margin:"0 auto", padding:"0 1rem" }}>
+        <h2 className={`section-title gradient-text ${visible?"animate-fadeInUp":"opacity-0"}`}>صندوق الاقتراحات</h2>
+        <div className={`section-divider ${visible?"animate-fadeInUp delay-100":"opacity-0"}`}/>
+
+        <div className={visible?"animate-fadeInUp delay-200":"opacity-0"} style={{ display:"grid", gridTemplateColumns:"1fr 1fr", gap:"2rem", alignItems:"start" }}>
+
+          {/* ── نموذج الاقتراح ── */}
+          <div className="glass-card" style={{ padding:"1.8rem" }}>
+            <h3 style={{ color:"var(--orange-dark)", fontWeight:700, marginBottom:"1.2rem", display:"flex", alignItems:"center", gap:8 }}>
+              <span>📝</span> أضف اقتراحك
+            </h3>
+            {isBanned ? (
+              <div style={{ textAlign:"center", padding:"2rem", background:"rgba(220,38,38,0.07)", borderRadius:14, border:"1px dashed rgba(220,38,38,0.3)" }}>
+                <div style={{ fontSize:"2.5rem", marginBottom:"0.5rem" }}>🚫</div>
+                <p style={{ color:"#ef4444", fontWeight:700, fontSize:"1rem" }}>أنت محظور من إرسال الاقتراحات</p>
+                <p style={{ color:"var(--text-muted)", fontSize:"0.82rem", marginTop:"0.4rem" }}>تواصل مع الإدارة لفك الحظر</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} style={{ display:"flex", flexDirection:"column", gap:"1rem" }}>
+                {/* Anonymous toggle */}
+                <label style={{ display:"flex", alignItems:"center", gap:"0.6rem", cursor:"pointer", userSelect:"none" }}>
+                  <div onClick={()=>setIsAnonymous(v=>!v)}
+                    style={{ width:44, height:24, borderRadius:999, background:isAnonymous?"var(--orange)":"rgba(70,21,6,0.15)", border:"2px solid",
+                      borderColor:isAnonymous?"var(--orange)":"rgba(70,21,6,0.2)", transition:"all 0.3s ease", position:"relative", flexShrink:0 }}>
+                    <div style={{ width:16, height:16, borderRadius:"50%", background:"white", position:"absolute", top:2,
+                      right:isAnonymous?2:22, transition:"right 0.3s ease", boxShadow:"0 1px 4px rgba(0,0,0,0.25)" }}/>
+                  </div>
+                  <span style={{ color:"var(--text-secondary)", fontSize:"0.92rem", fontWeight:600 }}>
+                    {isAnonymous ? "أنت مجهول الهوية 🎭" : "أنت مرئي للجميع 👤"}
+                  </span>
+                </label>
+                {/* Name field (if not anonymous) */}
+                {!isAnonymous && (
+                  <input className="form-input" placeholder="اسمك (اختياري)" value={name} onChange={e=>setName(e.target.value)} maxLength={50}/>
+                )}
+                {/* Suggestion text */}
+                <textarea className="form-input" placeholder="اكتب اقتراحك هنا..." value={text} onChange={e=>setText(e.target.value)} rows={4} required style={{ resize:"vertical", lineHeight:1.8 }} maxLength={500}/>
+                <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center" }}>
+                  <span style={{ color:"var(--text-muted)", fontSize:"0.78rem" }}>{text.length}/500</span>
+                  <button type="submit" className="btn-primary" style={{ padding:"0.6rem 1.5rem", display:"flex", alignItems:"center", gap:6 }}>
+                    <span style={{ width:16, height:16 }}><Ico.Check/></span> إرسال الاقتراح
+                  </button>
+                </div>
+                {submitMsg && (
+                  <div style={{ padding:"0.7rem 1rem", borderRadius:10, textAlign:"center", fontWeight:600, fontSize:"0.9rem",
+                    background:submitMsg.type==="success"?"rgba(22,163,74,0.1)":submitMsg.type==="warn"?"rgba(234,179,8,0.1)":"rgba(220,38,38,0.1)",
+                    color:submitMsg.type==="success"?"#16a34a":submitMsg.type==="warn"?"#ca8a04":"#dc2626",
+                    border:`1px solid ${submitMsg.type==="success"?"rgba(22,163,74,0.3)":submitMsg.type==="warn"?"rgba(234,179,8,0.3)":"rgba(220,38,38,0.3)"}` }}>
+                    {submitMsg.msg}
+                  </div>
+                )}
+              </form>
+            )}
+          </div>
+
+          {/* ── قائمة الاقتراحات ── */}
+          <div>
+            <h3 style={{ color:"var(--orange-dark)", fontWeight:700, marginBottom:"1rem", display:"flex", alignItems:"center", gap:8 }}>
+              <span>💡</span> الاقتراحات ({suggestions.length})
+            </h3>
+            {suggestions.length===0 ? (
+              <div className="glass-card" style={{ padding:"2.5rem", textAlign:"center", color:"var(--text-muted)" }}>
+                <div style={{ fontSize:"2.5rem", marginBottom:"0.5rem" }}>📭</div>
+                <p>لا توجد اقتراحات بعد. كن أول من يُضيف!</p>
+              </div>
+            ) : (
+              <div style={{ display:"flex", flexDirection:"column", gap:"0.8rem", maxHeight:400, overflowY:"auto", paddingLeft:4 }}>
+                {[...suggestions].reverse().map(s=>(
+                  <div key={s.id} className="glass-card" style={{ padding:"1rem 1.2rem" }}>
+                    <div style={{ display:"flex", justifyContent:"space-between", alignItems:"center", marginBottom:"0.4rem" }}>
+                      <span style={{ fontWeight:700, color:"var(--text-primary)", fontSize:"0.9rem", display:"flex", alignItems:"center", gap:6 }}>
+                        {s.isAnonymous ? "🎭 مجهول" : `👤 ${s.name}`}
+                      </span>
+                      <span style={{ color:"var(--text-muted)", fontSize:"0.75rem" }}>{s.createdAt}</span>
+                    </div>
+                    <p style={{ color:"var(--text-secondary)", fontSize:"0.88rem", lineHeight:1.7 }}>{s.text}</p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 // ─────────────────────────────────────────────
 // FOOTER
 // ─────────────────────────────────────────────
-function Footer({ onShowCode, isDark }: { onShowCode:()=>void; isDark:boolean }) {
+function Footer({ onShowCode, isDark, isSupervisor }: { onShowCode:()=>void; isDark:boolean; isSupervisor:boolean }) {
   return (
     <footer className="site-footer">
       <div style={{ position:"absolute", inset:0, opacity: isDark ? 0.3 : 0.05,
@@ -1319,12 +1512,14 @@ function Footer({ onShowCode, isDark }: { onShowCode:()=>void; isDark:boolean })
         </div>
         <div style={{ borderTop:"1px solid rgba(70,21,6,0.4)", paddingTop:"1.5rem", display:"flex", justifyContent:"space-between", alignItems:"center", flexWrap:"wrap", gap:"1rem" }}>
           <p style={{ fontSize:"0.82rem", color:"rgba(255,255,255,0.3)" }}>© {new Date().getFullYear()} الإنجاز الإبداعي — جميع الحقوق محفوظة</p>
-          <button onClick={onShowCode}
-            style={{ background:"rgba(70,21,6,0.3)", border:"1px solid rgba(70,21,6,0.5)", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer", color:"rgba(237,144,4,0.8)", fontFamily:"'Tajawal',sans-serif", fontSize:"0.85rem", display:"flex", alignItems:"center", gap:6, transition:"all 0.3s ease" }}
-            onMouseEnter={e=>{ (e.currentTarget).style.background="rgba(70,21,6,0.5)"; (e.currentTarget).style.borderColor="rgba(70,21,6,0.7)"; }}
-            onMouseLeave={e=>{ (e.currentTarget).style.background="rgba(70,21,6,0.3)"; (e.currentTarget).style.borderColor="rgba(70,21,6,0.5)"; }}>
-            <span style={{ width:16, height:16 }}><Ico.Code/></span>عرض كود الموقع
-          </button>
+          {isSupervisor && (
+            <button onClick={onShowCode}
+              style={{ background:"rgba(70,21,6,0.3)", border:"1px solid rgba(70,21,6,0.5)", borderRadius:10, padding:"0.5rem 1rem", cursor:"pointer", color:"rgba(237,144,4,0.8)", fontFamily:"'Tajawal',sans-serif", fontSize:"0.85rem", display:"flex", alignItems:"center", gap:6, transition:"all 0.3s ease" }}
+              onMouseEnter={e=>{ (e.currentTarget).style.background="rgba(70,21,6,0.5)"; (e.currentTarget).style.borderColor="rgba(70,21,6,0.7)"; }}
+              onMouseLeave={e=>{ (e.currentTarget).style.background="rgba(70,21,6,0.3)"; (e.currentTarget).style.borderColor="rgba(70,21,6,0.5)"; }}>
+              <span style={{ width:16, height:16 }}><Ico.Code/></span>عرض كود الموقع
+            </button>
+          )}
         </div>
       </div>
     </footer>
@@ -1334,7 +1529,8 @@ function Footer({ onShowCode, isDark }: { onShowCode:()=>void; isDark:boolean })
 // ─────────────────────────────────────────────
 // FLOATING CODE BUTTON
 // ─────────────────────────────────────────────
-function FloatingCodeButton({ onClick, isDark }: { onClick:()=>void; isDark:boolean }) {
+function FloatingCodeButton({ onClick, isDark, isSupervisor }: { onClick:()=>void; isDark:boolean; isSupervisor:boolean }) {
+  if(!isSupervisor) return null;
   return (
     <button onClick={onClick}
       style={{ position:"fixed", bottom:"1.5rem", right:"1.5rem", zIndex:800, width:52, height:52, borderRadius:"50%",
@@ -1363,6 +1559,10 @@ export default function App() {
   const [toast, setToast] = useState<{msg:string; type:"success"|"error"|"info"}|null>(null);
   const [admins, setAdmins] = useLocalStorage<AdminUser[]>("injaz-admins", INITIAL_ADMINS);
   const [failedLogins, setFailedLogins] = useLocalStorage<FailedLogin[]>("injaz-failed-logins", []);
+  const [bannedUsers, setBannedUsers] = useLocalStorage<BannedUser[]>("injaz-banned-users", []);
+  const [suggestions, setSuggestions] = useLocalStorage<Suggestion[]>("injaz-suggestions", []);
+  const currentAdmin = admins.find(a=>a.username===currentUser);
+  const isSupervisor = currentAdmin?.role==="supervisor";
 
   /* persist theme */
   useEffect(()=>{ const saved=localStorage.getItem("injaz-theme"); if(saved==="dark") setIsDark(true); },[]);
@@ -1410,20 +1610,22 @@ export default function App() {
         <GamesSection isAdmin={isAdmin} isDark={isDark}/>
         <GallerySection isAdmin={isAdmin} isDark={isDark}/>
         <MemberOfMonthSection isAdmin={isAdmin} isDark={isDark}/>
+        <SuggestionBoxSection isDark={isDark} bannedUsers={bannedUsers} setBannedUsers={setBannedUsers} suggestions={suggestions} setSuggestions={setSuggestions}/>
       </main>
 
-      <Footer onShowCode={()=>setShowCode(true)} isDark={isDark}/>
-      <FloatingCodeButton onClick={()=>setShowCode(true)} isDark={isDark}/>
+      <Footer onShowCode={()=>setShowCode(true)} isDark={isDark} isSupervisor={isSupervisor}/>
+      <FloatingCodeButton onClick={()=>setShowCode(true)} isDark={isDark} isSupervisor={isSupervisor}/>
 
       {/* Modals */}
       {showAuth && <AuthModal onClose={()=>setShowAuth(false)} onSuccess={handleLoginSuccess} admins={admins} onFailedAttempt={handleFailedAttempt}/>}
-      {showCode && <CodeViewerModal onClose={()=>setShowCode(false)}/>}
+      {showCode && isSupervisor && <CodeViewerModal onClose={()=>setShowCode(false)}/>}
       {showAdminCenter && isAdmin && (
         <AdminCenterModal
           onClose={()=>setShowAdminCenter(false)}
           admins={admins} setAdmins={setAdmins}
           failedLogins={failedLogins} setFailedLogins={setFailedLogins}
           currentUser={currentUser}
+          bannedUsers={bannedUsers} setBannedUsers={setBannedUsers}
         />
       )}
 
