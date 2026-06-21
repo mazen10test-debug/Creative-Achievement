@@ -495,7 +495,6 @@ function AdminCenterModal({ onClose, admins, setAdmins, failedLogins, setFailedL
                 )}
               </div>
             )}
-          </div>
 
             {tab==="bans" && (
               <div>
